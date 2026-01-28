@@ -1,11 +1,7 @@
 import os
-import sys
 import subprocess
 import cv2
-import ftplib
-import imageio_ffmpeg
 import requests
-import ftplib
 from datetime import datetime, timedelta
 from ultralytics import YOLO
 try:
@@ -17,29 +13,8 @@ except ImportError:
 NB_VIDEOS = 1        # << Nombre de vidéos finales à générer
 TARGET_SECONDS = 60  # << Durée MINIMALE par vidéo
 STREAMER_NAME = "anyme023"
-
-# FTP CONFIG
-FTP_HOST = "ftp.cluster129.hosting.ovh.net"
-FTP_USER = "silvero"
-FTP_PASS = "Iankee01"
-REMOTE_DIR = "www"
-BASE_URL = "https://silvertiti.fr"
-
-# POSTING CONFIG (Late API / TikTok)
-LATE_API_KEY = 'sk_f0b574c160a3d5f763eb073a42a9265dc68d191b713da87ba3f904e01a152368'
-TIKTOK_ACCOUNT_ID = '697a2e0a77637c5c857ca156'
-VIDEO_CAPTION = "💥 Anyme est INCONTRÔLABLE ! Ce clip est une dinguerie... 😂💀 #Anyme #TwitchFR #BestOfTwitch #ClipTwitch #StreamerFR #MDR #Viral #PourToi #FYP #MomentDrole"
-
-# Paramètres TikTok
-TIKTOK_SETTINGS = {
-    'privacy_level': 'PUBLIC_TO_EVERYONE', # 'PUBLIC_TO_EVERYONE', 'FRIENDS_ONLY', 'PRIVATE_TO_MYSELF'
-    'allow_comment': True,
-    'allow_duet': True,
-    'allow_stitch': True,
-    'content_preview_confirmed': True,
-    'express_consent_given': True
-}
-PUBLISH_NOW = True # True pour publier direct, False pour brouillon
+BOT_TOKEN = "7342966721:AAE6_C_LuyvcXaAuArlQ2AUz-lQUIFQ3Y4s"
+CHAT_ID = "1998327169"
 
 # On interroge suffisamment de clips côté API, mais on ne télécharge qu'à la demande.
 MAX_API_CLIPS = NB_VIDEOS * 40  # augmente si nécessaire
@@ -75,15 +50,12 @@ def get_clips(access_token, broadcaster_id, first=50, started_at=None):
 
 def telecharger_clip(url, output_file):
     print(f"⏬ Téléchargement de {url}...")
-    # Use python -m streamlink to ensure we use the installed module even if not in PATH
-    cmd = [sys.executable, "-m", "streamlink", "--twitch-disable-ads", url, "best", "-o", output_file]
-    result = subprocess.run(cmd)
+    result = subprocess.run(["streamlink", "--twitch-disable-ads", url, "best", "-o", output_file])
     return result.returncode == 0 and os.path.exists(output_file)
 
 def extraire_image(video_file, output_image):
-    ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
     subprocess.run(
-        [ffmpeg_exe, "-y", "-ss", "00:00:01", "-i", video_file, "-frames:v", "1", output_image],
+        ["ffmpeg", "-y", "-ss", "00:00:01", "-i", video_file, "-frames:v", "1", output_image],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
     )
     return os.path.exists(output_image)
@@ -97,7 +69,7 @@ def blur_frame(image, ksize=35):
 
 # -------- Détection webcam --------
 
-def detecter_webcam(image_path, model_path="best.pt"):
+def detecter_webcam(image_path, model_path="runs/detect/train6/weights/best.pt"):
     model = YOLO(model_path)
     img = cv2.imread(image_path)
     results = model.predict(source=image_path, conf=0.25, save=False, show=False)
@@ -215,7 +187,7 @@ def montage_tiktok(clips_paths, crop_params, output_path):
             output_path,
             codec="libx264",
             audio_codec="aac",
-            logger='bar' # << Barre de chargement activée
+            logger=None
         )
         print(f"✅ Exporté : {output_path}")
     finally:
@@ -238,91 +210,21 @@ def ajouter_clip_telecharge(fichier_txt, clip_id, clip_title):
         f.write(f"{clip_id}\n")
     print(f"📝 Clip noté comme téléchargé : {clip_id}")
 
+# -------- Telegram --------
 
-# -------- FTP --------
-
-def upload_to_ftp(local_path, remote_name):
-    if not os.path.exists(local_path):
-        print(f"❌ Erreur : Le fichier local '{local_path}' n'existe pas.")
-        return False
-
-    try:
-        print(f"🚀 Connexion FTP vers {FTP_HOST}...")
-        with ftplib.FTP(FTP_HOST, FTP_USER, FTP_PASS) as ftp:
-            ftp.cwd(REMOTE_DIR)
-            print(f"📂 Dossier FTP : {ftp.pwd()}")
-
-            print(f"📤 Envoi de '{local_path}' vers '{remote_name}'...")
-            with open(local_path, "rb") as f:
-                ftp.storbinary(f"STOR {remote_name}", f)
-            
-            print("✅ Upload FTP terminé avec succès !")
-            return True
-
-    except Exception as e:
-        print(f"❌ Erreur Upload FTP : {e}")
-        return False
-
-def delete_file_from_ftp(remote_name):
-    try:
-        print(f"🗑️ Suppression FTP de '{remote_name}'...")
-        with ftplib.FTP(FTP_HOST, FTP_USER, FTP_PASS) as ftp:
-            ftp.cwd(REMOTE_DIR)
-            ftp.delete(remote_name)
-        print("✅ Fichier supprimé du FTP avec succès !")
-        return True
-    except Exception as e:
-        print(f"❌ Erreur suppression FTP : {e}")
-        return False
-# -------- API Late --------
-
-def publish_to_late_api(video_filename, caption_content):
-    print("🚀 Préparation de la publication sur Late...")
-    
-    # URL publique du fichier sur le FTP
-    video_url = f"{BASE_URL}/{video_filename}"
-    
-    url = 'https://getlate.dev/api/v1/posts'
-    headers = {
-        'Authorization': f'Bearer {LATE_API_KEY}',
-        'Content-Type': 'application/json'
-    }
-
-    data = {
-        'content': caption_content,
-        'mediaItems': [
-            {
-                'url': video_url, 
-                'type': 'video' 
-            }
-        ],
-        'platforms': [{'platform': 'tiktok', 'accountId': TIKTOK_ACCOUNT_ID}],
-        'tiktokSettings': TIKTOK_SETTINGS,
-        'publishNow': PUBLISH_NOW
-    }
-
-    try:
-        response = requests.post(url, headers=headers, json=data)
-        
-        print(f"📡 Status Code API Late : {response.status_code}")
-        print(f"📄 Réponse brute : {response.text}")
-
-        try:
-            res_data = response.json()
-        except ValueError:
-            print("❌ Impossible de lire le JSON (réponse vide ou HTML).")
-            return False
-        
-        if response.ok:
-            print(f"✅ Posté avec succès sur Late ! ID: {res_data.get('_id', res_data.get('id', 'Inconnu'))}")
-            return True
-        else:
-            print("❌ L'API Late a renvoyé une erreur :", res_data)
-            return False
-            
-    except Exception as e:
-        print("❌ Erreur lors de l'appel API Late :", e)
-        return False
+def envoyer_telegram(file_path, bot_token, chat_id):
+    print("📲 Envoi sur Telegram…")
+    url = f"https://api.telegram.org/bot{bot_token}/sendVideo"
+    with open(file_path, 'rb') as f:
+        response = requests.post(
+            url,
+            data={'chat_id': chat_id, 'caption': "Voici ta vidéo TikTok 🥳"},
+            files={'video': f}
+        )
+    if response.status_code == 200:
+        print("✅ Vidéo envoyée sur Telegram !")
+    else:
+        print(f"❌ Erreur Telegram : {response.text}")
 
 # -------- Main --------
 
@@ -423,17 +325,7 @@ def main():
         crop_params = detecter_webcam(temp_frame)
         output_final = os.path.join(output_folder, f"tiktok_final_{idx}.mp4")
         montage_tiktok(groupe, crop_params, output_final)
-        
-        # Envoi FTP
-        remote_filename = os.path.basename(output_final)
-        if upload_to_ftp(output_final, remote_filename):
-            
-            # Publication API
-            if publish_to_late_api(remote_filename, VIDEO_CAPTION):
-                
-                # Si publié avec succès, on supprime du FTP
-                delete_file_from_ftp(remote_filename)
-
+        envoyer_telegram(output_final, BOT_TOKEN, CHAT_ID)
 
         # 🧹 Nettoyage des clips sources utilisés
         print(f"🧹 Suppression des {len(groupe)} clips sources...")
