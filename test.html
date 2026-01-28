@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Courses Hippiques – Fête Foraine (Paris avancés • Banque 80%)</title>
+    <style>
+      :root {
+        --bg1: #fff7ed;
+        --bg2: #fff1f2;
+        --ink: #0f172a;
+        --muted: #64748b;
+        --brand: #f59e0b;
+        --border: #e5e7eb;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu,
+          "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+        background: linear-gradient(#fff7ed, #fff1f2);
+        color: var(--ink);
+      }
+      header {
+        position: sticky;
+        top: 0;
+        backdrop-filter: blur(6px);
+        background: #ffffffb3;
+        border-bottom: 1px solid var(--border);
+        z-index: 10;
+      }
+      .wrap {
+        max-width: 1400px;
+        margin: auto;
+        padding: 12px 16px;
+      }
+      h1 {
+        font-size: 20px;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .coins {
+        font-weight: 700;
+        color: #92400e;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .row {
+        display: flex;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      .card {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        box-shadow: 0 1px 0 rgba(0, 0, 0, 0.03);
+        padding: 14px;
+      }
+      .panel {
+        flex: 0 0 360px;
+        max-width: 380px;
+      }
+      .stage {
+        flex: 1 1 0;
+        min-width: 600px;
+      }
+      label {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      select,
+      input[type="number"] {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        margin-top: 6px;
+      }
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid var(--border);
+        background: #fff;
+        border-radius: 12px;
+        padding: 10px 14px;
+        cursor: pointer;
+      }
+      .btn.primary {
+        background: var(--brand);
+        color: #111827;
+        border-color: transparent;
+        font-weight: 600;
+      }
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .btn + .btn {
+        margin-left: 8px;
+      }
+      .small {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      #stageWrap {
+        position: relative;
+        width: 100%;
+      }
+      canvas {
+        display: block;
+        width: 100%;
+        height: 78vh;
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        background: #c2e7ff;
+      }
+      .zoomWrap {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 8px;
+      }
+      input[type="range"] {
+        width: 200px;
+      }
+      .bets {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        max-height: 240px;
+        overflow: auto;
+        margin-top: 8px;
+      }
+      .bet {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 8px 10px;
+      }
+      .bet .meta {
+        font-size: 12px;
+        color: #111;
+      }
+      .pill {
+        font-size: 10px;
+        border: 1px solid var(--border);
+        padding: 2px 6px;
+        border-radius: 999px;
+        background: #f8fafc;
+      }
+      .gain {
+        font-weight: 700;
+      }
+      .ok {
+        color: #166534;
+      }
+      .ko {
+        color: #991b1b;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div
+        class="wrap row"
+        style="justify-content: space-between; align-items: center"
+      >
+        <h1>🏆 Courses Hippiques – Mode Fête Foraine (Paris avancés)</h1>
+        <div class="coins" id="coins">🪙 200</div>
+      </div>
+    </header>
+
+    <main class="wrap" style="padding-top: 14px">
+      <div class="row">
+        <!-- Panneau de contrôle & paris -->
+        <div class="card panel">
+          <h3 style="margin: 0 0 8px">Paramètres</h3>
+          <div class="row">
+            <div style="flex: 1 1 0">
+              <label for="horseCount">Chevaux</label>
+              <select id="horseCount">
+                <option>3</option>
+                <option>4</option>
+                <option>5</option>
+                <option selected>6</option>
+                <option>7</option>
+                <option>8</option>
+              </select>
+            </div>
+            <div style="flex: 1 1 0">
+              <label for="distance">Distance (m)</label>
+              <input
+                id="distance"
+                type="number"
+                min="80"
+                max="500"
+                step="10"
+                value="180"
+              />
+            </div>
+          </div>
+
+          <div class="zoomWrap">
+            <label for="zoom">Taille affichage</label
+            ><input
+              id="zoom"
+              type="range"
+              min="0.85"
+              max="1.35"
+              step="0.05"
+              value="1"
+            />
+          </div>
+          <div class="zoomWrap">
+            <input id="soundsToggle" type="checkbox" />
+            <label for="soundsToggle">Sons (départ + victoire)</label>
+          </div>
+
+          <h3 style="margin: 12px 0 6px">Créer un pari</h3>
+          <div>
+            <label for="betType">Type</label>
+            <select id="betType">
+              <option value="WIN">Gagnant (Win)</option>
+              <option value="PLACE">Placé (Top)</option>
+              <option value="EXACTA">Couplé Ordre (1er-2e)</option>
+              <option value="TRIFECTA">Trio Ordre (1er-2e-3e)</option>
+            </select>
+          </div>
+          <div class="row" style="margin-top: 6px">
+            <div style="flex: 1 1 0">
+              <label>Cheval #1</label
+              ><select id="sel1"></select>
+            </div>
+            <div style="flex: 1 1 0">
+              <label>Cheval #2</label
+              ><select id="sel2"></select>
+            </div>
+          </div>
+          <div class="row" style="margin-top: 6px">
+            <div style="flex: 1 1 0">
+              <label>Cheval #3</label
+              ><select id="sel3"></select>
+            </div>
+            <div style="flex: 1 1 0">
+              <label>Mise</label
+              ><input id="stake" type="number" min="1" step="1" value="10" />
+            </div>
+          </div>
+          <div class="small" id="oddsHint" style="margin-top: 6px">—</div>
+          <div style="margin-top: 8px">
+            <button class="btn" id="addBet">➕ Ajouter au ticket</button>
+          </div>
+
+          <h3 style="margin: 12px 0 6px">Mes paris</h3>
+          <div class="bets" id="bets"></div>
+          <div
+            class="row"
+            style="justify-content: space-between; margin-top: 6px"
+          >
+            <div class="small">
+              Mise totale: <span id="totalStake">0</span> 🪙
+            </div>
+            <div class="small">
+              Potentiel (approx.): <span id="potentialReturn">0</span> 🪙
+            </div>
+          </div>
+
+          <div style="margin-top: 12px">
+            <button class="btn primary" id="startBtn">
+              🟢 Lancer la course
+            </button>
+            <button class="btn" id="resetBtn">⟳ Réinitialiser</button>
+            <button class="btn" id="redrawBtn">🔀 Re‑tirage</button>
+          </div>
+          <div class="small" style="margin-top: 8px">
+            État : <span id="status">Prêt à courir !</span>
+          </div>
+        </div>
+
+        <!-- Vue animée -->
+        <div class="card stage">
+          <h3 style="margin: 0 0 8px">Piste animée</h3>
+          <div id="stageWrap">
+            <canvas id="race" width="1200" height="700"></canvas>
+          </div>
+          <div
+            class="row"
+            style="justify-content: space-between; margin-top: 8px"
+          >
+            <div class="small">
+              Distance: <span id="distanceOut">180</span> m
+            </div>
+            <div class="small">Temps: <span id="time">0.0</span> s</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 12px">
+        <h3 style="margin: 0 0 8px">Classement</h3>
+        <div
+          id="podium"
+          style="
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+          "
+        ></div>
+      </div>
+    </main>
+
+    <footer
+      class="wrap"
+      style="
+        text-align: center;
+        color: var(--muted);
+        font-size: 12px;
+        padding: 18px 0 28px;
+      "
+    >
+      Démo front‑end – aucun argent réel n'est impliqué. Paramètre RTP: 20%
+      (banque 80%).
+    </footer>
+
+    <script>
+      (function () {
+        // ---------- Elements ----------
+        const canvas = document.getElementById("race");
+        const ctx = canvas.getContext("2d");
+        const coinsEl = document.getElementById("coins");
+        const statusEl = document.getElementById("status");
+        const timeEl = document.getElementById("time");
+        const distanceEl = document.getElementById("distance");
+        const distanceOut = document.getElementById("distanceOut");
+        const horseCountEl = document.getElementById("horseCount");
+        const startBtn = document.getElementById("startBtn");
+        const resetBtn = document.getElementById("resetBtn");
+        const redrawBtn = document.getElementById("redrawBtn");
+        const soundsToggle = document.getElementById("soundsToggle");
+        const podium = document.getElementById("podium");
+        const stageWrap = document.getElementById("stageWrap");
+        const zoomEl = document.getElementById("zoom");
+        // Betting UI
+        const betTypeEl = document.getElementById("betType");
+        const sel1 = document.getElementById("sel1");
+        const sel2 = document.getElementById("sel2");
+        const sel3 = document.getElementById("sel3");
+        const stakeEl = document.getElementById("stake");
+        const addBetBtn = document.getElementById("addBet");
+        const betsEl = document.getElementById("bets");
+        const totalStakeEl = document.getElementById("totalStake");
+        const potentialReturnEl = document.getElementById("potentialReturn");
+        const oddsHint = document.getElementById("oddsHint");
+
+        // ---------- Parameters ----------
+        const RTP = 0.2; // 20% retourné aux joueurs en moyenne => rentabilité banque ~80%
+
+        // ---------- State ----------
+        const HORSE_NAMES = [
+          "Éclair",
+          "Tempête",
+          "Comète",
+          "Ouragan",
+          "Fusée",
+          "Mirage",
+          "Volt",
+          "Tonnerre",
+          "Cyclone",
+          "Mistral",
+        ];
+        let coins = 200;
+        let horses = [];
+        let finishedOrder = [];
+        let distanceM = 180; // meters
+        let startTs = null,
+          lastTs = null,
+          running = false,
+          countdown = 0;
+        let particles = [];
+        let betslip = []; // {id,type,sel:[...],stake,payout,status}
+        let betIdSeq = 1;
+
+        // ---------- Responsive canvas ----------
+        function resizeCanvas() {
+          const dpr = Math.max(1, Math.min(2.5, window.devicePixelRatio || 1));
+          const scale = parseFloat(zoomEl.value || "1");
+          stageWrap.style.transformOrigin = "top left";
+          stageWrap.style.transform = `scale(${scale})`;
+          const cssWidth = stageWrap.clientWidth;
+          const targetAspect = 16 / 9;
+          let cssHeight = Math.min(
+            window.innerHeight * 0.78,
+            cssWidth / targetAspect
+          );
+          canvas.style.height = cssHeight + "px";
+          canvas.style.width = cssWidth + "px";
+          canvas.width = Math.floor(cssWidth * dpr);
+          canvas.height = Math.floor(cssHeight * dpr);
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          const top = 120,
+            bottom = canvas.height / dpr - 40;
+          const laneH = (bottom - top) / Math.max(1, horses.length);
+          horses.forEach((h, i) => {
+            h.y = 120 + laneH * (i + 0.5);
+          });
+          drawFrame(0, true);
+        }
+        window.addEventListener("resize", resizeCanvas);
+        zoomEl.addEventListener("input", resizeCanvas);
+
+        // ---------- Helpers ----------
+        const rand = (a, b) => Math.random() * (b - a) + a;
+        const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+        const pickUnique = (n) =>
+          [...HORSE_NAMES].sort(() => Math.random() - 0.5).slice(0, n);
+
+        // Realistic odds with explicit RTP (return to player)
+        function assignOddsWithRTP(hs) {
+          // true strengths
+          const strengths = hs.map((h) => h.potential * rand(0.95, 1.05));
+          const sum = strengths.reduce((a, b) => a + b, 0);
+          hs.forEach((h, i) => {
+            const pTrue = strengths[i] / sum; // vraie proba ~
+            const fairOdds = 1 / pTrue; // cote "équitable" décimale
+            h.fairOdds = fairOdds; // stockée pour combos
+            let displayed = fairOdds * RTP; // applique RTP 20%
+            displayed = clamp(displayed, 1.1, 12); // garde lisible
+            // arrondi commercial (deux décimales)
+            h.odds = Math.round(displayed * 100) / 100;
+          });
+          // ordonner par favori
+          hs.sort((a, b) => a.odds - b.odds).forEach(
+            (h, idx) => (h.lane = idx)
+          );
+          return hs;
+        }
+
+        function makeHorses(count) {
+          const names = pickUnique(count);
+          const arr = [];
+          const top = 120,
+            bottom =
+              canvas.height / Math.max(1, window.devicePixelRatio || 1) - 40;
+          const laneH = (bottom - top) / count;
+          for (let i = 0; i < count; i++) {
+            const potential = rand(0.9, 1.2);
+            arr.push({
+              id: i + 1,
+              name: names[i],
+              color: `hsl(${Math.round(rand(0, 360))} 80% 45%)`,
+              lane: i,
+              x: 40,
+              y: 120 + laneH * (i + 0.5),
+              v: 0,
+              potential,
+              phase: rand(0, Math.PI * 2),
+              finished: false,
+              odds: 2,
+              fairOdds: 2,
+            });
+          }
+          return assignOddsWithRTP(arr);
+        }
+
+        // ---------- Background & horses drawing ----------
+        function drawBackground() {
+          const w = canvas.width / (window.devicePixelRatio || 1);
+          const h = canvas.height / (window.devicePixelRatio || 1);
+          const grad = ctx.createLinearGradient(0, 0, 0, h);
+          grad.addColorStop(0, "#c2e7ff");
+          grad.addColorStop(0.6, "#e6f3ff");
+          grad.addColorStop(1, "#fdf2f8");
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, w, h);
+          ctx.fillStyle = "#1f2937";
+          ctx.fillRect(0, 70, w, 26);
+          for (let i = 0; i < 260; i++) {
+            ctx.fillStyle = `hsl(${(i * 17) % 360} 70% ${40 + (i % 7) * 4}%)`;
+            const x = (i * 35) % w,
+              y = 70 + (i % 2 ? 14 : 8);
+            ctx.fillRect(x, y, 6, 6);
+          }
+          for (let i = 0; i < Math.ceil(w / 140); i++) {
+            ctx.fillStyle = i % 2 ? "#f59e0b" : "#ef4444";
+            ctx.fillRect(40 + i * 140, 46, 60, 14);
+          }
+          const top = 120,
+            bottom = h - 40;
+          ctx.fillStyle = "#d9c3a4";
+          ctx.fillRect(0, top, w, bottom - top);
+          const lanes = horses.length,
+            laneH = (bottom - top) / lanes;
+          ctx.strokeStyle = "#fef3c7";
+          ctx.lineWidth = 2;
+          for (let i = 1; i < lanes; i++) {
+            const y = top + laneH * i;
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(w, y);
+            ctx.stroke();
+          }
+          ctx.fillStyle = "#9ca3af";
+          ctx.fillRect(0, top - 6, w, 4);
+          ctx.fillRect(0, bottom + 2, w, 4);
+          const finishX = w - 160;
+          for (let i = 0; i < 24; i++) {
+            ctx.fillStyle = i % 2 ? "#111827" : "#ffffff";
+            ctx.fillRect(finishX, top + i * 14, 16, 14);
+          }
+          ctx.fillStyle = "#111827";
+          ctx.font = "12px system-ui";
+          ctx.fillText("ARRIVÉE", finishX - 66, top - 12);
+          ctx.fillStyle = "#111827";
+          ctx.fillRect(40, top - 10, 6, bottom - top + 20);
+        }
+
+        function drawHorse(h) {
+          const k = Math.sin(h.phase) * 0.5 + 0.5;
+          const bob = Math.sin(h.phase * 2) * 3;
+          const x = h.x + 60;
+          const y = h.y + bob;
+          ctx.globalAlpha = 0.15;
+          ctx.fillStyle = "#000";
+          ctx.beginPath();
+          ctx.ellipse(x, y + 18, 38, 10, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 1;
+          ctx.fillStyle = h.color;
+          ctx.strokeStyle = "#00000020";
+          roundedRect(x - 42, y - 18, 84, 32, 10, true, true);
+          ctx.beginPath();
+          ctx.moveTo(x + 22, y - 10);
+          ctx.lineTo(x + 44, y - 22);
+          ctx.lineTo(x + 52, y - 8);
+          ctx.closePath();
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(x + 56, y - 6, 8, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = "#111827";
+          ctx.beginPath();
+          ctx.arc(x + 58, y - 8, 1.8, 0, Math.PI * 2);
+          ctx.fill();
+          const legLen = 30;
+          const spread = 10 + k * 6;
+          ctx.strokeStyle = "#111827";
+          ctx.lineWidth = 3;
+          drawLeg(x + 20, y + 10, -spread * 0.6, legLen * (0.8 + k * 0.2));
+          drawLeg(x + 14, y + 10, spread * 0.4, legLen * (0.9 + (1 - k) * 0.2));
+          drawLeg(x - 18, y + 10, spread * 0.8, legLen * (0.8 + k * 0.2));
+          drawLeg(
+            x - 24,
+            y + 10,
+            -spread * 0.5,
+            legLen * (0.9 + (1 - k) * 0.2)
+          );
+          ctx.strokeStyle = h.color;
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.moveTo(x - 42, y - 8);
+          ctx.quadraticCurveTo(x - 60, y - 16 - 6 * k, x - 54, y + 8);
+          ctx.stroke();
+          ctx.fillStyle = "#fff";
+          roundedRect(x - 10, y - 20, 20, 16, 6, true, true);
+          ctx.fillStyle = "#111827";
+          ctx.font = "10px system-ui";
+          ctx.textAlign = "center";
+          ctx.fillText("#" + h.id, x, y - 8);
+          ctx.fillStyle = "#fff";
+          roundedRect(x - 18, y + 18, 36, 14, 6, true, true);
+          ctx.fillStyle = "#111827";
+          ctx.font = "10px system-ui";
+          ctx.fillText(h.odds.toFixed(2) + "x", x, y + 28);
+        }
+        function drawLeg(x, y, angle, len) {
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.rotate((angle * Math.PI) / 180);
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.lineTo(0, len);
+          ctx.stroke();
+          ctx.restore();
+        }
+        function roundedRect(x, y, w, h, r, fill, stroke) {
+          ctx.beginPath();
+          ctx.moveTo(x + r, y);
+          ctx.arcTo(x + w, y, x + w, y + h, r);
+          ctx.arcTo(x + w, y + h, x, y + h, r);
+          ctx.arcTo(x, y + h, x, y, r);
+          ctx.arcTo(x, y, x + w, y, r);
+          if (fill) ctx.fill();
+          if (stroke) ctx.stroke();
+        }
+        function drawParticles() {
+          particles.forEach((p) => {
+            ctx.globalAlpha = p.a;
+            ctx.fillStyle = p.c;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+          });
+        }
+        function updateParticles(dt) {
+          for (let i = particles.length - 1; i >= 0; i--) {
+            const p = particles[i];
+            p.x += p.vx * dt;
+            p.y += p.vy * dt;
+            p.a -= 0.8 * dt;
+            p.r *= 1 - 0.8 * dt;
+            if (p.a <= 0 || p.r < 0.5) particles.splice(i, 1);
+          }
+        }
+        function addDust(x, y, color) {
+          for (let i = 0; i < 3; i++) {
+            particles.push({
+              x: x - 8 + rand(-3, 3),
+              y: y + 14 + rand(-2, 2),
+              vx: rand(-12, -40),
+              vy: rand(-8, 0),
+              r: rand(1.2, 3),
+              a: 0.5,
+              c: color,
+            });
+          }
+        }
+
+        // ---------- Race logic ----------
+        function reset(newDraw) {
+          if (newDraw) {
+            horses = makeHorses(parseInt(horseCountEl.value, 10));
+            rebuildSelections();
+          }
+          distanceM = clamp(parseInt(distanceEl.value, 10) || 180, 80, 500);
+          distanceOut.textContent = distanceM;
+          finishedOrder = [];
+          horses.forEach((h) => {
+            h.x = 40;
+            h.v = 0;
+            h.finished = false;
+            h.phase = rand(0, Math.PI * 2);
+          });
+          startTs = null;
+          lastTs = null;
+          running = false;
+          countdown = 0;
+          timeEl.textContent = "0.0";
+          particles = [];
+          drawFrame(0, true);
+          drawPodium();
+          statusEl.textContent = "Prêt à courir !";
+        }
+
+        function loop(ts) {
+          if (!lastTs) lastTs = ts;
+          const dt = Math.min(0.05, (ts - lastTs) / 1000);
+          lastTs = ts;
+          if (countdown > 0) {
+            countdown -= dt;
+            drawFrame(dt, true);
+            requestAnimationFrame(loop);
+            return;
+          }
+          if (!running) {
+            running = true;
+            startTs = performance.now();
+            statusEl.textContent = "Course en cours…";
+          }
+
+          let finishedNow = [];
+          const w = canvas.width / (window.devicePixelRatio || 1);
+          horses.forEach((h) => {
+            if (h.finished) return;
+            const base = 60 * h.potential;
+            const jitter = rand(-12, 18);
+            const burst = Math.random() < 0.045 ? rand(40, 95) : 0;
+            const ax = base + jitter + burst;
+            h.v = clamp(h.v * 0.9 + ax * 0.1, 40, 180);
+            h.x += h.v * dt;
+            h.phase += (h.v / 110) * dt * 12;
+            if (Math.random() < 0.6) addDust(h.x, h.y, "#b08968");
+            if (h.x >= w - 160) {
+              h.finished = true;
+              finishedNow.push(h.id);
+              h.x = w - 160;
+            }
+          });
+          if (finishedNow.length) {
+            finishedNow.forEach((id) => {
+              if (!finishedOrder.includes(id)) finishedOrder.push(id);
+            });
+            drawPodium();
+          }
+          drawFrame(dt, false);
+          if (horses.every((h) => h.finished)) {
+            endRace();
+            return;
+          }
+          requestAnimationFrame(loop);
+        }
+
+        function drawCountdownOverlay() {
+          const t = Math.ceil(countdown);
+          const alpha = 1 - (countdown % 1);
+          ctx.fillStyle = `rgba(255,255,255,${0.6 * alpha})`;
+          const w = canvas.width / (window.devicePixelRatio || 1),
+            h = canvas.height / (window.devicePixelRatio || 1);
+          ctx.fillRect(0, 0, w, h);
+          ctx.fillStyle = "#111827";
+          ctx.font = "bold 120px system-ui";
+          ctx.textAlign = "center";
+          ctx.fillText(t > 0 ? t : "GO!", w / 2, h / 2);
+        }
+        function drawFrame(dt, showCountdown) {
+          drawBackground();
+          updateParticles(dt);
+          drawParticles();
+          horses.forEach(drawHorse);
+          if (showCountdown) drawCountdownOverlay();
+          if (startTs)
+            timeEl.textContent = ((performance.now() - startTs) / 1000).toFixed(
+              1
+            );
+        }
+
+        function startRace() {
+          if (running || countdown > 0) return;
+          if (betslip.length === 0) {
+            alert("Ajoute au moins un pari.");
+            return;
+          }
+          countdown = 3.2;
+          statusEl.textContent = "Prêts…";
+          if (soundsToggle.checked) playStartBeep();
+          requestAnimationFrame(loop);
+        }
+        function endRace() {
+          running = false;
+          statusEl.textContent = "Course terminée";
+          if (soundsToggle.checked) playWinFanfare();
+          settleBets();
+        }
+
+        function drawPodium() {
+          podium.innerHTML = "";
+          for (let i = 0; i < 3; i++) {
+            const id = finishedOrder[i];
+            const h = horses.find((x) => x.id === id);
+            const el = document.createElement("div");
+            el.className = "card";
+            el.innerHTML = h
+              ? `<div style="font-weight:700">${i + 1}ᵉ – <span style="color:${
+                  h.color
+                }">${h.name}</span> <span style="color:#64748b">#${
+                  h.id
+                }</span></div><div class="small">Cote: ${h.odds.toFixed(
+                  2
+                )}x</div>`
+              : `<div class="small">${i + 1}ᵉ —</div>`;
+            if (i === 0) el.style.outline = "2px solid #fbbf24";
+            podium.appendChild(el);
+          }
+        }
+
+        // ---------- Betting engine (RTP 20%) ----------
+        function rebuildSelections() {
+          const options = horses
+            .map(
+              (h) =>
+                `<option value="${h.id}">#${h.id} – ${h.name} (${h.odds.toFixed(
+                  2
+                )}x)</option>`
+            )
+            .join("");
+          sel1.innerHTML = options;
+          sel2.innerHTML = '<option value="">—</option>' + options;
+          sel3.innerHTML = '<option value="">—</option>' + options;
+          updateOddsHint();
+        }
+
+        function placeCount() {
+          const n = horses.length;
+          if (n <= 3) return 1;
+          if (n <= 7) return 2;
+          return 3;
+        }
+
+        // Use fair odds × RTP for combos to target global RTP (not compounded per selection)
+        function comboMultiplier(ids) {
+          const fair = ids.map(
+            (id) => horses.find((h) => h.id === id)?.fairOdds || 1
+          );
+          const fairProduct = fair.reduce((a, b) => a * b, 1);
+          return fairProduct * RTP; // single RTP factor applied
+        }
+
+        function approxReturnPreview(type, stake, s1, s2, s3) {
+          if (!s1) return 0;
+          const h1 = horses.find((h) => h.id === s1);
+          if (type === "WIN") return Math.round(stake * (h1?.odds || 1));
+          if (type === "PLACE") {
+            const k = placeCount();
+            const f = k === 1 ? 0.6 : k === 2 ? 0.33 : 0.25;
+            return Math.round(stake * (1 + ((h1?.odds || 1) - 1) * f));
+          }
+          if (type === "EXACTA" && s2) {
+            const mult = comboMultiplier([s1, s2]);
+            return Math.round(stake * mult);
+          }
+          if (type === "TRIFECTA" && s2 && s3) {
+            const mult = comboMultiplier([s1, s2, s3]);
+            return Math.round(stake * mult);
+          }
+          return 0;
+        }
+
+        function updateOddsHint() {
+          const type = betTypeEl.value;
+          const s1 = parseInt(sel1.value || "0", 10);
+          const s2 = parseInt(sel2.value || "0", 10);
+          const s3 = parseInt(sel3.value || "0", 10);
+          const stake = Math.max(1, parseInt(stakeEl.value || "1", 10));
+          const est = approxReturnPreview(type, stake, s1, s2, s3);
+          let text = "—";
+          if (type === "WIN") {
+            const o = horses.find((h) => h.id === s1)?.odds;
+            if (o) text = `Gagnant: ${o.toFixed(2)}x → ~${est} 🪙`;
+          }
+          if (type === "PLACE") {
+            const k = placeCount();
+            const o = horses.find((h) => h.id === s1)?.odds;
+            if (o) text = `Placé (Top ${k}) → ~${est} 🪙`;
+          }
+          if (type === "EXACTA" && s2) {
+            const mult = comboMultiplier([s1, s2]);
+            text = `Couplé Ordre: ~${mult.toFixed(2)}x → ~${est} 🪙`;
+          }
+          if (type === "TRIFECTA" && s2 && s3) {
+            const mult = comboMultiplier([s1, s2, s3]);
+            text = `Trio Ordre: ~${mult.toFixed(2)}x → ~${est} 🪙`;
+          }
+          oddsHint.textContent = text;
+          updateTotals();
+        }
+
+        function addBet() {
+          const type = betTypeEl.value;
+          const s1 = parseInt(sel1.value || "0", 10);
+          const s2 = sel2.value ? parseInt(sel2.value, 10) : null;
+          const s3 = sel3.value ? parseInt(sel3.value, 10) : null;
+          const stake = Math.max(
+            1,
+            Math.floor(parseInt(stakeEl.value || "0", 10))
+          );
+          if (!s1 || stake <= 0) {
+            alert("Sélectionne un cheval et une mise.");
+            return;
+          }
+          if (type === "EXACTA" && (!s2 || s2 === s1)) {
+            alert("Choisis 1er ET 2e différents.");
+            return;
+          }
+          if (
+            type === "TRIFECTA" &&
+            (!s2 || !s3 || new Set([s1, s2, s3]).size < 3)
+          ) {
+            alert("Choisis 1er, 2e, 3e tous différents.");
+            return;
+          }
+          if (coins < stake) {
+            alert("Solde insuffisant.");
+            return;
+          }
+          coins -= stake;
+          coinsEl.textContent = "🪙 " + coins;
+          const b = {
+            id: betIdSeq++,
+            type,
+            sel: [s1, s2, s3].filter(Boolean),
+            stake,
+            payout: 0,
+            status: "pending",
+          };
+          betslip.push(b);
+          renderBets();
+          updateTotals();
+        }
+
+        function removeBet(id) {
+          const i = betslip.findIndex((b) => b.id === id);
+          if (i >= 0) {
+            coins += betslip[i].stake;
+            betslip.splice(i, 1);
+            coinsEl.textContent = "🪙 " + coins;
+            renderBets();
+            updateTotals();
+          }
+        }
+
+        function updateTotals() {
+          const total = betslip.reduce((a, b) => a + b.stake, 0);
+          totalStakeEl.textContent = total;
+          const preview = betslip.reduce(
+            (a, b) => a + approxReturnPreview(b.type, b.stake, ...b.sel),
+            0
+          );
+          potentialReturnEl.textContent = preview;
+        }
+
+        function renderBets() {
+          betsEl.innerHTML = "";
+          betslip.forEach((b) => {
+            const div = document.createElement("div");
+            div.className = "bet";
+            const label =
+              b.type === "WIN"
+                ? "Gagnant"
+                : b.type === "PLACE"
+                ? "Placé"
+                : b.type === "EXACTA"
+                ? "Couplé Ordre"
+                : "Trio Ordre";
+            const pick = b.sel
+              .map((id) => {
+                const h = horses.find((x) => x.id === id);
+                return h ? `#${h.id} ${h.name}` : `#${id}`;
+              })
+              .join(" → ");
+            const meta = document.createElement("div");
+            meta.className = "meta";
+            meta.innerHTML = `<span class="pill">${label}</span> ${pick} · ${b.stake} 🪙`;
+            const right = document.createElement("div");
+            const rm = document.createElement("button");
+            rm.className = "btn";
+            rm.textContent = "✖";
+            rm.onclick = () => removeBet(b.id);
+            right.appendChild(rm);
+            div.appendChild(meta);
+            div.appendChild(right);
+            betsEl.appendChild(div);
+          });
+        }
+
+        function settleBets() {
+          const first = finishedOrder[0],
+            second = finishedOrder[1],
+            third = finishedOrder[2];
+          let totalReturn = 0;
+          betslip.forEach((b) => {
+            let won = false;
+            let ret = 0;
+            if (b.type === "WIN") {
+              won = b.sel[0] === first;
+              if (won) {
+                const o = horses.find((h) => h.id === first).odds;
+                ret = Math.round(b.stake * o);
+              }
+            } else if (b.type === "PLACE") {
+              const k = placeCount();
+              const pos = finishedOrder.indexOf(b.sel[0]);
+              if (pos > -1 && pos < k) {
+                const o = horses.find((h) => h.id === b.sel[0]).odds;
+                const f = k === 1 ? 0.6 : k === 2 ? 0.33 : 0.25;
+                ret = Math.round(b.stake * (1 + (o - 1) * f));
+                won = true;
+              }
+            } else if (b.type === "EXACTA") {
+              won = b.sel[0] === first && b.sel[1] === second;
+              if (won) {
+                const mult = comboMultiplier([first, second]);
+                ret = Math.round(b.stake * mult);
+              }
+            } else if (b.type === "TRIFECTA") {
+              won =
+                b.sel[0] === first && b.sel[1] === second && b.sel[2] === third;
+              if (won) {
+                const mult = comboMultiplier([first, second, third]);
+                ret = Math.round(b.stake * mult);
+              }
+            }
+            b.payout = ret;
+            b.status = won ? "won" : "lost";
+            totalReturn += ret;
+          });
+          coins += totalReturn;
+          coinsEl.textContent = "🪙 " + coins;
+          // Render results
+          betsEl.innerHTML = "";
+          betslip.forEach((b) => {
+            const div = document.createElement("div");
+            div.className = "bet";
+            const label =
+              b.type === "WIN"
+                ? "Gagnant"
+                : b.type === "PLACE"
+                ? "Placé"
+                : b.type === "EXACTA"
+                ? "Couplé Ordre"
+                : "Trio Ordre";
+            const pick = b.sel
+              .map((id) => {
+                const h = horses.find((x) => x.id === id);
+                return h ? `#${h.id} ${h.name}` : `#${id}`;
+              })
+              .join(" → ");
+            const meta = document.createElement("div");
+            meta.className = "meta";
+            const status =
+              b.status === "won"
+                ? `<span class="ok">✔</span>`
+                : `<span class="ko">✖</span>`;
+            meta.innerHTML = `<span class="pill">${label}</span> ${pick} · ${b.stake} 🪙 ${status}`;
+            const gain = document.createElement("div");
+            gain.className = "gain";
+            gain.textContent = b.payout > 0 ? `+${b.payout} 🪙` : `0 🪙`;
+            div.appendChild(meta);
+            div.appendChild(gain);
+            betsEl.appendChild(div);
+          });
+          updateTotals();
+        }
+
+        // ---------- Tiny sounds ----------
+        let audioCtx = null;
+        function ac() {
+          if (!audioCtx)
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          return audioCtx;
+        }
+        function beep(freq, dur, type = "sine", vol = 0.03) {
+          const a = ac();
+          const t0 = a.currentTime;
+          const o = a.createOscillator();
+          const g = a.createGain();
+          o.type = type;
+          o.frequency.value = freq;
+          g.gain.value = vol;
+          o.connect(g);
+          g.connect(a.destination);
+          o.start();
+          o.stop(t0 + dur);
+        }
+        function playStartBeep() {
+          beep(440, 0.12, "square");
+          setTimeout(() => beep(660, 0.12, "square"), 900);
+          setTimeout(() => beep(880, 0.18, "square"), 1800);
+        }
+        function playWinFanfare() {
+          beep(523, 0.18, "triangle");
+          setTimeout(() => beep(659, 0.18, "triangle"), 120);
+          setTimeout(() => beep(784, 0.25, "triangle"), 240);
+        }
+
+        // ---------- Events ----------
+        startBtn.addEventListener("click", startRace);
+        resetBtn.addEventListener("click", () => {
+          betslip = [];
+          renderBets();
+          updateTotals();
+          reset(false);
+        });
+        redrawBtn.addEventListener("click", () => {
+          horses = makeHorses(parseInt(horseCountEl.value, 10));
+          rebuildSelections();
+          reset(false);
+        });
+        distanceEl.addEventListener("input", () => {
+          distanceM = clamp(parseInt(distanceEl.value, 10) || 180, 80, 500);
+          distanceOut.textContent = distanceM;
+          drawFrame(0, true);
+        });
+        horseCountEl.addEventListener("change", () => {
+          horses = makeHorses(parseInt(horseCountEl.value, 10));
+          rebuildSelections();
+          reset(false);
+        });
+        betTypeEl.addEventListener("change", updateOddsHint);
+        sel1.addEventListener("change", updateOddsHint);
+        sel2.addEventListener("change", updateOddsHint);
+        sel3.addEventListener("change", updateOddsHint);
+        stakeEl.addEventListener("input", updateOddsHint);
+        addBetBtn.addEventListener("click", addBet);
+
+        // ---------- Init ----------
+        function init() {
+          coinsEl.textContent = "🪙 " + coins;
+          resizeCanvas();
+          horses = makeHorses(parseInt(horseCountEl.value, 10));
+          rebuildSelections();
+          reset(false);
+        }
+        init();
+      })();
+    </script>
+  </body>
+</html>

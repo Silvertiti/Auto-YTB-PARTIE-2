@@ -1,0 +1,175 @@
+import requests
+from datetime import datetime, timedelta, timezone
+import csv
+import time
+import random
+
+client_id = 'nhplbk0cauctrdgh13rf75sv387lye'
+client_secret = 'cycmd8gr3xozmxacw8yj7v3tb9d1qz'
+
+def get_access_token():
+    url = 'https://id.twitch.tv/oauth2/token'
+    params = {
+        'client_id': client_id,
+        'client_secret': client_secret,
+        'grant_type': 'client_credentials'
+    }
+    response = requests.post(url, params=params)
+    return response.json()['access_token']
+
+def get_user_id(access_token, username):
+    url = 'https://api.twitch.tv/helix/users'
+    headers = {
+        'Client-ID': client_id,
+        'Authorization': f'Bearer {access_token}'
+    }
+    params = {'login': username}
+    response = requests.get(url, headers=headers, params=params)
+    data = response.json()['data']
+    return data[0]['id'] if data else None
+
+def get_game_name(access_token, game_id):
+    if not game_id:
+        return 'N/A'
+    url = 'https://api.twitch.tv/helix/games'
+    headers = {
+        'Client-ID': client_id,
+        'Authorization': f'Bearer {access_token}'
+    }
+    params = {'id': game_id}
+    response = requests.get(url, headers=headers, params=params)
+    data = response.json().get('data', [])
+    return data[0]['name'] if data else 'N/A'
+
+def get_clips(access_token, broadcaster_id, first=20, started_at=None):
+    url = 'https://api.twitch.tv/helix/clips'
+    headers = {
+        'Client-ID': client_id,
+        'Authorization': f'Bearer {access_token}'
+    }
+    params = {
+        'broadcaster_id': broadcaster_id,
+        'first': first,
+    }
+    if started_at:
+        params['started_at'] = started_at
+
+    response = requests.get(url, headers=headers, params=params)
+    try:
+        data = response.json()['data']
+    except KeyError:
+        print("⚠️ Réponse inattendue :", response.json())
+        return []
+    return data
+
+def scrape_clips_for_streamers(streamer_list, max_clips_per_streamer=5):
+    access_token = get_access_token()
+    started_at = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+
+    all_clips = []
+    game_id_cache = {}
+
+    for streamer in streamer_list:
+        print(f"🔎 Récupération des clips de {streamer}…")
+        user_id = get_user_id(access_token, streamer)
+        if not user_id:
+            print(f"❌ Streamer {streamer} non trouvé.")
+            continue
+
+        clips = get_clips(access_token, user_id, first=20, started_at=started_at)
+        if not clips:
+            print(f"❌ Aucun clip trouvé pour {streamer}.")
+            continue
+
+        # Trie les clips par vues décroissantes et garde les 5 meilleurs
+        clips_sorted = sorted(clips, key=lambda x: x['view_count'], reverse=True)[:max_clips_per_streamer]
+
+        for clip in clips_sorted:
+            game_id = clip.get('game_id', None)
+            if game_id not in game_id_cache:
+                game_name = get_game_name(access_token, game_id)
+                game_id_cache[game_id] = game_name
+                time.sleep(0.5)
+            else:
+                game_name = game_id_cache[game_id]
+
+            clip_info = {
+                'streamer': streamer,
+                'title': clip['title'],
+                'url': clip['url'],
+                'views': clip['view_count'],
+                'duration': clip['duration'],
+                'created_at': clip['created_at'],
+                'category': game_name
+            }
+            all_clips.append(clip_info)
+
+        time.sleep(1)
+
+    return all_clips
+
+def save_clips_to_csv(clips, filename='clips_24h_filtered.csv', max_duration=720):
+    # Trie les clips par vues décroissantes
+    sorted_clips = sorted(clips, key=lambda x: x['views'], reverse=True)
+
+    # Sélectionne les clips pour rester sous la durée max
+    selected_clips = []
+    total_duration = 0
+
+    for clip in sorted_clips:
+        clip_duration = clip['duration']
+        if total_duration + clip_duration <= max_duration:
+            selected_clips.append(clip)
+            total_duration += clip_duration
+        else:
+            break
+
+    if not selected_clips:
+        print("❌ Aucun clip ne respecte la limite de durée.")
+        return
+
+    # Le meilleur clip en premier, le reste mélangé
+    best_clip = selected_clips[0]
+    remaining_clips = selected_clips[1:]
+    random.shuffle(remaining_clips)
+
+    final_clips = [best_clip] + remaining_clips
+
+    with open(filename, mode='w', newline='', encoding='utf-8') as f:
+        writer = csv.DictWriter(f, fieldnames=['streamer', 'title', 'url', 'views', 'duration', 'created_at', 'category'])
+        writer.writeheader()
+        writer.writerows(final_clips)
+
+    print(f"✅ {len(final_clips)} clips enregistrés dans {filename} (1er clip = le meilleur, le reste mélangé) !")
+
+def main():
+    desired_category = "Minecraft"
+
+    with open('streamers.txt', 'r', encoding='utf-8') as f:
+        streamer_list = [line.strip() for line in f if line.strip()]
+
+    if not streamer_list:
+        print("❌ Aucun streamer dans le fichier streamers.txt")
+        return
+
+    # Récupère max 5 clips par streamer
+    all_clips = scrape_clips_for_streamers(streamer_list, max_clips_per_streamer=5)
+
+    if not all_clips:
+        print("❌ Aucun clip trouvé pour la liste fournie.")
+        return
+
+    # Filtre les clips pour la catégorie choisie
+    filtered_clips = [clip for clip in all_clips if clip['category'].lower() == desired_category.lower()]
+
+    if not filtered_clips:
+        print(f"❌ Aucun clip trouvé pour la catégorie {desired_category}.")
+        return
+
+    # Sauvegarde en CSV trié par vues, mais mélangé sauf le top
+    save_clips_to_csv(filtered_clips, max_duration=800)  # 800 secondes = 13 minutes 20 secondes
+    print(f"✅ {len(filtered_clips)} clips trouvés pour la catégorie {desired_category}.")
+    print("🔄 Exécution terminée.")
+
+if __name__ == "__main__":
+    main()

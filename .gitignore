@@ -1,0 +1,34 @@
+# Python internals
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Media files (Images & Videos)
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.bmp
+*.tiff
+*.webp
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.flv
+*.wmv
+
+# Directories containing generated/downloaded media
+clips/
+clips_cropped/
+clips_downloaded/
+clips_tiktok/
+thumbnails/
+
+# Datasets and Models
+dataset/
+runs/
+*.pt
+*.pth
+labels/
