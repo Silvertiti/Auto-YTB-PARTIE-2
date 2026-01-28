@@ -1,0 +1,10 @@
+requests
+opencv-python
+moviepy
+ultralytics
+streamlink
+python-vlc
+yt_dlp
+pillow
+selenium
+webdriver_manager

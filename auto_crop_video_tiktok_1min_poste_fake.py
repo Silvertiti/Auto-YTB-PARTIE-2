@@ -2,8 +2,9 @@ import os
 import subprocess
 import cv2
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from ultralytics import YOLO
+
 try:
     from moviepy.editor import VideoFileClip, concatenate_videoclips, CompositeVideoClip
 except ImportError:
@@ -13,17 +14,24 @@ except ImportError:
 NB_VIDEOS = 1        # << Nombre de vidéos finales à générer
 TARGET_SECONDS = 60  # << Durée MINIMALE par vidéo
 STREAMER_NAME = "anyme023"
-BOT_TOKEN = "7342966721:AAE6_C_LuyvcXaAuArlQ2AUz-lQUIFQ3Y4s"
-CHAT_ID = "1998327169"
 
-# On interroge suffisamment de clips côté API, mais on ne télécharge qu'à la demande.
-MAX_API_CLIPS = NB_VIDEOS * 40  # augmente si nécessaire
+# --- CONFIG TIKTOK / GETLATE ---
+# ⚠️ REMPLACEZ CECI PAR VOTRE NOUVELLE CLÉ API
+GETLATE_API_KEY = "sk_f0b574c160a3d5f763eb073a42a9265dc68d191b713da87ba3f904e01a152368" 
+
+# Description optimisée
+TIKTOK_DESCRIPTION = (
+    "CE MOMENT EST JUSTE LÉGENDAIRE ! 😱🔥 Vous n'êtes pas prêts pour la fin... 👇 "
+    "#TwitchFR #BestOf #Anime #Gaming #Viral #PourToi #FYP #ClipsTwitch #Anyme023 #MDR"
+)
+
+MAX_API_CLIPS = NB_VIDEOS * 40 
 # ==========================
 
 client_id = 'nhplbk0cauctrdgh13rf75sv387lye'
 client_secret = 'cycmd8gr3xozmxacw8yj7v3tb9d1qz'
 
-# -------- Utils --------
+# -------- Utils API --------
 
 def get_access_token():
     url = 'https://id.twitch.tv/oauth2/token'
@@ -86,20 +94,19 @@ def detecter_webcam(image_path, model_path="runs/detect/train6/weights/best.pt")
     return None
 
 # -------- Compatibility Helpers (MoviePy v1 vs v2) --------
+# C'est ici que l'on gère les différences de versions
 
 def apply_crop(clip, x1=None, y1=None, x2=None, y2=None, width=None, height=None, x_center=None, y_center=None):
-    if hasattr(clip, 'crop'):
+    if hasattr(clip, 'crop'): # MoviePy v1
         return clip.crop(x1=x1, y1=y1, x2=x2, y2=y2, width=width, height=height, x_center=x_center, y_center=y_center)
-    else:
-        # MoviePy v2
+    else: # MoviePy v2
         from moviepy.video.fx import Crop
         return clip.with_effects([Crop(x1=x1, y1=y1, x2=x2, y2=y2, width=width, height=height, x_center=x_center, y_center=y_center)])
 
 def apply_resize(clip, width=None, height=None):
-    if hasattr(clip, 'resize'):
+    if hasattr(clip, 'resize'): # MoviePy v1
         return clip.resize(width=width, height=height)
-    else:
-        # MoviePy v2
+    else: # MoviePy v2
         from moviepy.video.fx import Resize
         return clip.with_effects([Resize(width=width, height=height)])
 
@@ -119,21 +126,34 @@ def apply_fl_image(clip, func):
     if hasattr(clip, 'fl_image'):
         return clip.fl_image(func)
     else:
-        # MoviePy v2
         return clip.image_transform(func)
+
+def apply_subclip(clip, start, end):
+    """Gère subclip (v1) vs subclipped (v2)"""
+    if hasattr(clip, 'subclipped'):
+        return clip.subclipped(start, end)
+    else:
+        return clip.subclip(start, end)
 
 # -------- Montage --------
 
 def montage_tiktok(clips_paths, crop_params, output_path):
     print(f"🎞️ Montage final : {output_path}")
-    clips = [VideoFileClip(p) for p in clips_paths]
+    
+    # Préparation des clips avec correction "0 bytes read"
+    clips = []
+    for p in clips_paths:
+        c = VideoFileClip(p)
+        # On utilise le helper apply_subclip pour éviter l'erreur
+        c = apply_subclip(c, 0, max(0, c.duration - 0.1))
+        clips.append(c)
+
     try:
-        full_clip = concatenate_videoclips(clips)
+        full_clip = concatenate_videoclips(clips, method="compose")
 
         if crop_params:
             x, y, w, h = crop_params
             
-            # Correction v2 : apply_crop / apply_resize / apply_position
             webcam_clip = apply_crop(full_clip, x1=x, y1=y, x2=x + w, y2=y + h)
             webcam_clip = apply_resize(webcam_clip, width=720)
             
@@ -152,8 +172,6 @@ def montage_tiktok(clips_paths, crop_params, output_path):
                 ],
                 size=(720, 1280)
             )
-            # Duration is kept from full_clip or set on Composite if needed, 
-            # usually Composite takes duration of longest clip or we set it explicitly.
             if hasattr(final, 'set_duration'):
                 final = final.set_duration(full_clip.duration)
             else:
@@ -163,8 +181,6 @@ def montage_tiktok(clips_paths, crop_params, output_path):
                 final = apply_audio(final, full_clip.audio)
         else:
             base_clip = apply_resize(full_clip, width=720)
-            # Pour le flou, fl_image existe toujours en v2
-            # Correction v2: fl_image -> apply_fl_image
             blurred = apply_resize(base_clip, height=1280)
             blurred = apply_fl_image(blurred, lambda f: blur_frame(f, 35))
             
@@ -194,21 +210,34 @@ def montage_tiktok(clips_paths, crop_params, output_path):
         for c in clips:
             c.close()
 
-# -------- Telegram --------
+# -------- GetLate / TikTok Upload --------
 
-def envoyer_telegram(file_path, bot_token, chat_id):
-    print("📲 Envoi sur Telegram…")
-    url = f"https://api.telegram.org/bot{bot_token}/sendVideo"
-    with open(file_path, 'rb') as f:
-        response = requests.post(
-            url,
-            data={'chat_id': chat_id, 'caption': "Voici ta vidéo TikTok 🥳"},
-            files={'video': f}
-        )
-    if response.status_code == 200:
-        print("✅ Vidéo envoyée sur Telegram !")
-    else:
-        print(f"❌ Erreur Telegram : {response.text}")
+def upload_tiktok_getlate(file_path, api_key, description):
+    print("🚀 Envoi sur TikTok via GetLate...")
+    # URL hypothétique, à vérifier dans la doc GetLate
+    url = "https://api.getlate.dev/tiktok/post" 
+    
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+    }
+    
+    payload = {
+        "description": description,
+        "privacy": "public",
+    }
+
+    try:
+        with open(file_path, 'rb') as video_file:
+            files = {'file': video_file}
+            response = requests.post(url, headers=headers, data=payload, files=files)
+        
+        if response.status_code in [200, 201]:
+            print(f"✅ Vidéo postée avec succès sur TikTok ! (Réponse: {response.json()})")
+        else:
+            print(f"❌ Erreur Upload ({response.status_code}) : {response.text}")
+            
+    except Exception as e:
+        print(f"❌ Exception lors de l'upload : {e}")
 
 # -------- Main --------
 
@@ -222,27 +251,28 @@ def main():
         print("❌ Streamer non trouvé.")
         return
 
-    # On récupère une LISTE de candidats (non téléchargés)
+    # Correction du warning datetime (UTC aware)
+    now_utc = datetime.now(timezone.utc)
+    
     clips_data = get_clips(
         access_token, user_id,
         first=max(10, min(100, MAX_API_CLIPS)),
-        started_at=(datetime.utcnow() - timedelta(hours=24)).isoformat() + 'Z'
+        started_at=(now_utc - timedelta(hours=24)).isoformat()
     )
     if not clips_data:
         print("❌ Aucun clip trouvé.")
         return
 
-    # Trier par vues décroissantes (on veut les meilleurs d'abord)
+    # Trier par vues
     clips_data = sorted(clips_data, key=lambda c: c['view_count'], reverse=True)
 
     groupes = []
-    idx_clip = 0  # pointeur dans la liste des clips API
+    idx_clip = 0
 
     for video_index in range(1, NB_VIDEOS + 1):
         courant = []
         total = 0.0
 
-        # Ajoute des clips tant qu'on n'a pas atteint la durée minimale
         while total < TARGET_SECONDS and idx_clip < len(clips_data):
             clip = clips_data[idx_clip]
             idx_clip += 1
@@ -251,46 +281,46 @@ def main():
             clip_url = clip['url']
             file_path = os.path.join(output_folder, f"{clip_id}.mp4")
 
-            # Télécharge uniquement si nécessaire
             if not os.path.exists(file_path):
                 ok = telecharger_clip(clip_url, file_path)
                 if not ok:
-                    continue  # essai clip suivant si échec
+                    continue
 
-            # Mesure la durée
             try:
                 with VideoFileClip(file_path) as v:
                     d = v.duration
             except Exception:
-                continue  # clip illisible, on passe
+                continue
 
             courant.append(file_path)
             total += d
 
-        # Si on n'a pas réussi à atteindre la durée minimale, on s'arrête là (pas de vidéo incomplète)
         if total < TARGET_SECONDS:
-            print(f"⛔ Pas assez de contenu pour fabriquer la vidéo {video_index} (manque {int(TARGET_SECONDS - total)} s).")
+            print(f"⛔ Pas assez de contenu pour la vidéo {video_index}.")
             break
 
         groupes.append(courant)
 
     if not groupes:
-        print("❌ Pas assez de clips pour créer une vidéo complète.")
+        print("❌ Pas assez de clips.")
         return
 
-    # Génération + envoi
     for idx, groupe in enumerate(groupes, start=1):
-        print(f"\n===== Génération de la vidéo {idx}/{len(groupes)} (≥ {TARGET_SECONDS}s) =====")
+        print(f"\n===== Génération de la vidéo {idx}/{len(groupes)} =====")
         first_clip = groupe[0]
         temp_frame = first_clip.replace(".mp4", f"_frame_{idx}.jpg")
+        
         if not extraire_image(first_clip, temp_frame):
             print("❌ Erreur extraction image.")
             continue
 
         crop_params = detecter_webcam(temp_frame)
         output_final = os.path.join(output_folder, f"tiktok_final_{idx}.mp4")
+        
         montage_tiktok(groupe, crop_params, output_final)
-        envoyer_telegram(output_final, BOT_TOKEN, CHAT_ID)
+        
+        # Envoi
+        upload_tiktok_getlate(output_final, GETLATE_API_KEY, TIKTOK_DESCRIPTION)
 
 if __name__ == "__main__":
     main()
