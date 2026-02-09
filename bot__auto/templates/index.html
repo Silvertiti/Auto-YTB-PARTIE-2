@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twitch Bot - Simple</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #0f172a; color: #cbd5e1; }
+        .input-dark { background-color: #1e293b; border: 1px solid #334155; color: white; }
+        .input-dark:focus { border-color: #3b82f6; outline: none; }
+        /* Pour masquer la flèche des datalists sur certains navigateurs si besoin */
+        input::-webkit-calendar-picker-indicator { opacity: 0; }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-lg bg-slate-800 p-6 rounded-lg shadow-2xl border border-slate-700">
+        
+        <div class="flex justify-between items-center mb-6 pb-4 border-b border-slate-700">
+            <h1 class="text-xl font-bold text-white tracking-wide">🤖 Twitch Bot V5</h1>
+            <div id="status_dot" class="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e]"></div>
+        </div>
+
+        <div class="space-y-5">
+            
+            <div class="grid grid-cols-3 gap-3">
+                <div class="col-span-1">
+                    <label class="block text-xs text-slate-400 font-bold uppercase mb-1">Je cherche</label>
+                    <select id="type" onchange="updateList()" class="w-full p-3 rounded bg-slate-900 border border-slate-600 text-white focus:border-blue-500 outline-none">
+                        <option value="channel" selected>👤 Streamer</option>
+                        <option value="game">🎮 Jeu</option>
+                    </select>
+                </div>
+
+                <div class="col-span-2">
+                    <label class="block text-xs text-slate-400 font-bold uppercase mb-1">Nom (Choisis ou tape)</label>
+                    <div class="relative">
+                        <input id="query" type="text" list="current-list" placeholder="Nom du Streamer..." 
+                               class="w-full p-3 rounded bg-slate-900 border border-slate-600 text-white font-semibold focus:border-blue-500 outline-none">
+                        <div class="absolute right-3 top-3 text-slate-500 pointer-events-none">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <datalist id="streamers-list">
+                <option value="anyme023">
+                <option value="JLTomy">
+                <option value="Gotaga">
+                <option value="Kamet0">
+                <option value="Aminematue">
+                <option value="Terracid">
+                <option value="ZeratoR">
+                <option value="Squeezie">
+                <option value="Locklear">
+                <option value="Domingo">
+                <option value="Etoiles">
+                <option value="PapeSan">
+                <option value="RebeuDeter">
+            </datalist>
+
+            <datalist id="games-list">
+                <option value="Grand Theft Auto V">
+                <option value="League of Legends">
+                <option value="Just Chatting">
+                <option value="Valorant">
+                <option value="Minecraft">
+                <option value="Fortnite">
+                <option value="Call of Duty: Warzone">
+                <option value="Counter-Strike">
+                <option value="EA Sports FC 24">
+                <option value="Dofus">
+                <option value="Rocket League">
+            </datalist>
+
+            <div class="grid grid-cols-3 gap-3">
+                <div>
+                    <label class="text-xs text-slate-400 font-bold uppercase mb-1">Période</label>
+                    <select id="period" class="w-full p-2 rounded input-dark text-sm">
+                        <option value="24h">24h</option>
+                        <option value="7d">7 jours</option>
+                        <option value="30d">30 jours</option>
+                        <option value="all">Tout</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs text-slate-400 font-bold uppercase mb-1">Quantité</label>
+                    <input id="nb_videos" type="number" value="1" min="1" class="w-full p-2 rounded input-dark text-sm">
+                </div>
+                <div>
+                    <label class="text-xs text-slate-400 font-bold uppercase mb-1">Langue</label>
+                    <input id="lang" type="text" value="fr" class="w-full p-2 rounded input-dark text-center text-sm uppercase">
+                </div>
+            </div>
+
+            <hr class="border-slate-700">
+
+            <div>
+                <div class="flex justify-between mb-1">
+                    <label class="text-xs text-slate-400 font-bold uppercase">Compte TikTok</label>
+                    <button onclick="openModal()" class="text-xs text-blue-400 hover:text-white transition">+ Ajouter</button>
+                </div>
+                <select id="tiktok_account" class="w-full p-3 rounded bg-slate-900 border border-slate-600 text-white focus:border-pink-500 outline-none">
+                    {% for account in accounts %}
+                        <option value="{{ account }}">{{ account }}</option>
+                    {% else %}
+                        <option value="" disabled selected>-- Aucun compte --</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="bg-slate-900/50 p-3 rounded border border-slate-700">
+                <div class="flex justify-between items-center">
+                    <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" id="send_telegram" checked class="w-4 h-4 rounded bg-slate-800 border-slate-600 text-blue-500">
+                        <span class="ml-2 text-sm">Telegram</span>
+                    </label>
+                    <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" id="auto_post" onchange="toggleSchedule()" class="w-4 h-4 rounded bg-slate-800 border-slate-600 text-pink-500">
+                        <span class="ml-2 text-sm text-pink-400">Auto-Post TikTok</span>
+                    </label>
+                </div>
+
+                <div id="schedule_zone" class="hidden mt-3 pt-3 border-t border-slate-700 flex items-center justify-between">
+                    <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" id="publish_now" checked onchange="toggleTimeInputs()" class="w-4 h-4 rounded bg-slate-800 text-green-500">
+                        <span class="ml-2 text-xs text-green-400">Publier de suite</span>
+                    </label>
+                    
+                    <div id="time_inputs" class="flex items-center gap-1 opacity-50 pointer-events-none transition-opacity">
+                        <input type="number" id="schedule_hour" value="18" class="w-10 p-1 text-center rounded bg-slate-800 border border-slate-600 text-xs">
+                        <span class="text-slate-500 font-bold">:</span>
+                        <input type="number" id="schedule_minute" value="00" class="w-10 p-1 text-center rounded bg-slate-800 border border-slate-600 text-xs">
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="launchBot()" id="btn" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-3 rounded-lg shadow-lg transition transform active:scale-[0.98] mt-2">
+                🚀 LANCER
+            </button>
+            <div id="status" class="text-xs font-mono text-center text-slate-500 h-4"></div>
+        </div>
+    </div>
+
+    <div id="modal" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-slate-800 p-6 rounded-lg border border-slate-600 w-80 shadow-2xl">
+            <h3 class="font-bold text-white mb-4 text-center">Nouveau Compte</h3>
+            <input id="new_name" type="text" placeholder="Nom (ex: HAWAII)" class="w-full p-2 mb-3 rounded bg-slate-900 border border-slate-600 text-white text-sm">
+            <input id="new_id" type="text" placeholder="ID (ex: 697a...)" class="w-full p-2 mb-5 rounded bg-slate-900 border border-slate-600 text-white text-sm">
+            <div class="flex justify-between">
+                <button onclick="closeModal()" class="px-4 py-2 text-slate-400 hover:text-white text-sm">Annuler</button>
+                <button onclick="saveAccount()" class="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded text-sm font-bold">Sauvegarder</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- LOGIQUE SIMPLE ---
+        function updateList() {
+            const type = document.getElementById('type').value;
+            const input = document.getElementById('query');
+            
+            // On vide le champ pour éviter de chercher "Anyme023" dans la catégorie "Jeu"
+            input.value = ""; 
+
+            if (type === 'channel') {
+                input.setAttribute('list', 'streamers-list');
+                input.placeholder = "Nom du Streamer...";
+            } else {
+                input.setAttribute('list', 'games-list');
+                input.placeholder = "Nom du Jeu (ex: GTA V)...";
+            }
+        }
+        
+        // Initialisation au chargement
+        window.onload = updateList;
+
+        // --- FONCTIONS UI ---
+        function toggleSchedule() {
+            const isAuto = document.getElementById('auto_post').checked;
+            document.getElementById('schedule_zone').classList.toggle('hidden', !isAuto);
+        }
+        function toggleTimeInputs() {
+            const immediate = document.getElementById('publish_now').checked;
+            const inputs = document.getElementById('time_inputs');
+            if(immediate) inputs.classList.add('opacity-50', 'pointer-events-none');
+            else inputs.classList.remove('opacity-50', 'pointer-events-none');
+        }
+
+        function openModal() { document.getElementById('modal').classList.replace('hidden', 'flex'); }
+        function closeModal() { document.getElementById('modal').classList.replace('flex', 'hidden'); }
+        
+        async function saveAccount() {
+            const name = document.getElementById('new_name').value;
+            const id = document.getElementById('new_id').value;
+            if(!name || !id) return;
+            await fetch('/add_account', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({name, id})
+            });
+            location.reload();
+        }
+
+        async function launchBot() {
+            const btn = document.getElementById('btn');
+            const status = document.getElementById('status');
+            btn.disabled = true; btn.classList.add('opacity-50', 'cursor-not-allowed');
+            status.innerText = "⏳ Envoi de la commande...";
+            status.className = "text-xs font-mono text-center text-blue-400 mt-2 h-4";
+
+            const payload = {
+                query: document.getElementById('query').value,
+                type: document.getElementById('type').value,
+                period: document.getElementById('period').value,
+                nb_videos: document.getElementById('nb_videos').value,
+                lang: document.getElementById('lang').value,
+                tiktok_account: document.getElementById('tiktok_account').value,
+                auto_post: document.getElementById('auto_post').checked,
+                send_telegram: document.getElementById('send_telegram').checked,
+                publish_now: document.getElementById('publish_now').checked,
+                schedule_hour: document.getElementById('schedule_hour').value,
+                schedule_minute: document.getElementById('schedule_minute').value
+            };
+
+            try {
+                const res = await fetch('/run', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                
+                if(res.status === 429) { 
+                    status.innerText = "⚠️ " + data.message;
+                    status.className = "text-xs font-mono text-center text-orange-400 mt-2 h-4 font-bold";
+                } else if(data.status === 'success') {
+                    status.innerText = "✅ " + data.message;
+                    status.className = "text-xs font-mono text-center text-green-400 mt-2 h-4 font-bold";
+                } else {
+                    status.innerText = "❌ " + data.message;
+                    status.className = "text-xs font-mono text-center text-red-400 mt-2 h-4 font-bold";
+                }
+            } catch (e) {
+                status.innerText = "❌ Erreur serveur";
+                status.className = "text-xs font-mono text-center text-red-400 mt-2 h-4 font-bold";
+            }
+            
+            setTimeout(() => { 
+                btn.disabled = false; 
+                btn.classList.remove('opacity-50', 'cursor-not-allowed'); 
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

@@ -5,8 +5,8 @@ import time
 import random
 import os
 
-client_id = 'nhplbk0cauctrdgh13rf75sv387lye'
-client_secret = 'cycmd8gr3xozmxacw8yj7v3tb9d1qz'
+client_id = os.getenv("TWITCH_CLIENT_ID")
+client_secret = os.getenv("TWITCH_CLIENT_SECRET")
 
 def get_access_token():
     url = 'https://id.twitch.tv/oauth2/token'

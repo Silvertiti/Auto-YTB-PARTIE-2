@@ -1,8 +1,9 @@
 import requests
+import os
 
 url = 'https://getlate.dev/api/v1/posts'
 headers = {
-    'Authorization': 'Bearer sk_f0b574c160a3d5f763eb073a42a9265dc68d191b713da87ba3f904e01a152368',
+    'Authorization': 'Bearer ' + (os.getenv('LATE_API_KEY') or ''),
     'Content-Type': 'application/json'
 }
 

@@ -19,8 +19,8 @@ BOT_TOKEN = "7342966721:AAE6_C_LuyvcXaAuArlQ2AUz-lQUIFQ3Y4s"
 CHAT_ID = "1998327169"
 
 # Identifiants app Twitch
-client_id = 'nhplbk0cauctrdgh13rf75sv387lye'
-client_secret = 'cycmd8gr3xozmxacw8yj7v3tb9d1qz'
+client_id = os.getenv("TWITCH_CLIENT_ID")
+client_secret = os.getenv("TWITCH_CLIENT_SECRET")
 
 
 # -------- Utils Twitch --------

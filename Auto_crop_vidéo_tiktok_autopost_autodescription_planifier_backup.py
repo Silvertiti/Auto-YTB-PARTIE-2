@@ -12,23 +12,40 @@ try:
     from moviepy.editor import VideoFileClip, concatenate_videoclips, CompositeVideoClip
 except ImportError:
     from moviepy import VideoFileClip, concatenate_videoclips, CompositeVideoClip
+from groq import Groq
+import urllib3
+from dotenv import load_dotenv
+
+# Charger les variables d'environnement
+load_dotenv()
+
+# Désactivation des avertissements SSL (puisque nous allons utiliser verify=False)
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+# Groq Client Initialization
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 # ========= CONFIG =========
 NB_VIDEOS = 1        # << Nombre de vidéos finales à générer
 TARGET_SECONDS = 60  # << Durée MINIMALE par vidéo
-STREAMER_NAME = "anyme023"
+# SEARCH CONFIG
+SEARCH_QUERY = "anyme023"   # Nom du streamer OU du jeu
+SEARCH_TYPE = "channel"       # 'channel' ou 'game'
+SEARCH_PERIOD = "24h"          # '24h', '7d', '30d', 'all'
+CLIP_LANGUAGE = "fr"          # 'fr', 'en', etc. ou "" pour tout (ex: None)
 
 # FTP CONFIG
-FTP_HOST = "ftp.cluster129.hosting.ovh.net"
-FTP_USER = "silvero"
-FTP_PASS = "Iankee01"
+FTP_HOST = os.getenv("FTP_HOST")
+FTP_USER = os.getenv("FTP_USER")
+FTP_PASS = os.getenv("FTP_PASS")
 REMOTE_DIR = "www"
 BASE_URL = "https://silvertiti.fr"
 
 # POSTING CONFIG (Late API / TikTok)
-LATE_API_KEY = 'sk_f0b574c160a3d5f763eb073a42a9265dc68d191b713da87ba3f904e01a152368'
-TIKTOK_ACCOUNT_ID = '697a2e0a77637c5c857ca156'
-VIDEO_CAPTION = "💥 Anyme est INCONTRÔLABLE ! Ce clip est une dinguerie... 😂💀 #Anyme #TwitchFR #BestOfTwitch #ClipTwitch #StreamerFR #MDR #Viral #PourToi #FYP #MomentDrole"
+LATE_API_KEY = os.getenv("LATE_API_KEY")
+TIKTOK_ACCOUNT_ID = os.getenv("TIKTOK_ACCOUNT_ID_HAWAII") # HAWAIISERVICE
+#TIKTOK_ACCOUNT_ID = os.getenv("TIKTOK_ACCOUNT_ID_BLACKGEN") # BlackGEN
+
 
 # Paramètres TikTok
 TIKTOK_SETTINGS = {
@@ -39,37 +56,52 @@ TIKTOK_SETTINGS = {
     'content_preview_confirmed': True,
     'express_consent_given': True
 }
-PUBLISH_NOW = True # True pour publier direct, False pour brouillon
+PUBLISH_NOW = True # True pour publier direct, False pour brouillon/programmé
+SCHEDULE_HOUR = 12   # Heure de programmation (0-23)
+SCHEDULE_MINUTE = 0  # Minute de programmation (0-59)
+AUTO_POST = True     # True = Post auto (FTP + API), False = Juste créer la vidéo localement
 
 # On interroge suffisamment de clips côté API, mais on ne télécharge qu'à la demande.
-MAX_API_CLIPS = NB_VIDEOS * 40  # augmente si nécessaire
+MAX_API_CLIPS = NB_VIDEOS * 250  # augmente si nécessaire
 # ==========================
 
-client_id = 'nhplbk0cauctrdgh13rf75sv387lye'
-client_secret = 'cycmd8gr3xozmxacw8yj7v3tb9d1qz'
+client_id = os.getenv("TWITCH_CLIENT_ID")
+client_secret = os.getenv("TWITCH_CLIENT_SECRET")
 
 # -------- Utils --------
 
 def get_access_token():
     url = 'https://id.twitch.tv/oauth2/token'
     params = {'client_id': client_id, 'client_secret': client_secret, 'grant_type': 'client_credentials'}
-    response = requests.post(url, params=params)
+    response = requests.post(url, params=params, verify=False)
     response.raise_for_status()
     return response.json()['access_token']
 
 def get_user_id(access_token, username):
     headers = {'Client-ID': client_id, 'Authorization': f'Bearer {access_token}'}
-    response = requests.get('https://api.twitch.tv/helix/users', headers=headers, params={'login': username})
+    response = requests.get('https://api.twitch.tv/helix/users', headers=headers, params={'login': username}, verify=False)
     response.raise_for_status()
     data = response.json().get('data', [])
     return data[0]['id'] if data else None
 
-def get_clips(access_token, broadcaster_id, first=50, started_at=None):
+def get_game_id(access_token, game_name):
     headers = {'Client-ID': client_id, 'Authorization': f'Bearer {access_token}'}
-    params = {'broadcaster_id': broadcaster_id, 'first': first}
+    response = requests.get('https://api.twitch.tv/helix/games', headers=headers, params={'name': game_name}, verify=False)
+    response.raise_for_status()
+    data = response.json().get('data', [])
+    return data[0]['id'] if data else None
+
+def get_clips(access_token, broadcaster_id=None, game_id=None, first=50, started_at=None):
+    headers = {'Client-ID': client_id, 'Authorization': f'Bearer {access_token}'}
+    params = {'first': first}
+    if broadcaster_id:
+        params['broadcaster_id'] = broadcaster_id
+    if game_id:
+        params['game_id'] = game_id
     if started_at:
         params['started_at'] = started_at
-    response = requests.get('https://api.twitch.tv/helix/clips', headers=headers, params=params)
+    
+    response = requests.get('https://api.twitch.tv/helix/clips', headers=headers, params=params, verify=False)
     response.raise_for_status()
     return response.json().get('data', [])
 
@@ -274,6 +306,62 @@ def delete_file_from_ftp(remote_name):
     except Exception as e:
         print(f"❌ Erreur suppression FTP : {e}")
         return False
+# -------- Groq Metadata Generation --------
+
+def generate_metadata(streamer_name, titre_clip_twitch):
+    print(f"🧠 Génération des métadonnées avec Groq pour : {titre_clip_twitch}...")
+    
+    system_instruction = """
+Tu es un expert en viralité pour TikTok et YouTube Shorts.
+Ton but est de générer les métadonnées pour un clip vidéo.
+
+INSTRUCTIONS :
+1. Analyse le NOM DU STREAMER et le TITRE DU CLIP fournis.
+2. Génère un TITRE CLICKBAIT (Court, mots-clés en MAJUSCULES, 2-3 emojis).
+3. Génère une liste de HASHTAGS. Tu dois mélanger des hashtags génériques (comme #TwitchFR #BestOfTwitch) ET des hashtags précis liés au sujet du clip (ex: le nom du jeu, le thème "CultureG", "Minecraft", etc.).
+
+FORMAT DE RÉPONSE STRICT (2 lignes maximum, pas de guillemets, pas de préfixe "Titre:") :
+[LIGNE 1 : TON TITRE ICI]
+[LIGNE 2 : TES HASHTAGS ICI]
+"""
+    try:
+        completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {
+                    "role": "system",
+                    "content": system_instruction
+                },
+                {
+                    "role": "user",
+                    "content": f"Streamer: {streamer_name}Titre du clip: {titre_clip_twitch}"
+                }
+            ],
+            temperature=0.7,
+            max_tokens=200,
+            top_p=1,
+            stream=False,
+            stop=None
+        )
+        
+        # Le contenu est dans completion.choices[0].message.content
+        response_text = completion.choices[0].message.content.strip()
+        lines = response_text.split('\n')
+        
+        # Nettoyage basique pour récupérer titre et hashtags
+        titre = lines[0].strip() if len(lines) > 0 else "TITRE VIRAL GENERE"
+        hashtags = lines[1].strip() if len(lines) > 1 else "#Viral #Twitch"
+        
+        # On combine pour la description finale
+        final_caption = f"{titre}\n{hashtags}"
+        print(f"✨ Métadonnées générées :\\n{final_caption}")
+        return final_caption
+
+    except Exception as e:
+        print(f"❌ Erreur Groq : {e}")
+        # Fallback si erreur
+        return f"Clip de {streamer_name} ! 🎬 #TwitchFR #BestOf #Viral"
+
 # -------- API Late --------
 
 def publish_to_late_api(video_filename, caption_content):
@@ -288,6 +376,7 @@ def publish_to_late_api(video_filename, caption_content):
         'Content-Type': 'application/json'
     }
 
+    # Préparation du payloads
     data = {
         'content': caption_content,
         'mediaItems': [
@@ -301,8 +390,26 @@ def publish_to_late_api(video_filename, caption_content):
         'publishNow': PUBLISH_NOW
     }
 
+    # Si on ne publie pas immédiatement, on ajoute la date de programmation
+    if not PUBLISH_NOW:
+        # Calcul de la date de programmation : Aujourd'hui à l'heure définie
+        now = datetime.now()
+        scheduled_date = now.replace(hour=SCHEDULE_HOUR, minute=SCHEDULE_MINUTE, second=0, microsecond=0)
+        
+        # Si la date programmée est déjà passée, on programme pour demain même heure 
+        # (Optionnel, mais évite les erreurs d'API si on lance le script à 14h alors que SCHEDULE_HOUR est 12h)
+        if scheduled_date < now:
+             scheduled_date += timedelta(days=1)
+
+        # Conversion en ISO 8601 avec fuseau horaire
+        scheduled_iso = scheduled_date.astimezone().isoformat()
+        print(f"📅 Programmation du post pour : {scheduled_iso}")
+        data['scheduledFor'] = scheduled_iso
+    else:
+        print("⚡ Publication IMMÉDIATE demandée (PUBLISH_NOW = True)")
+
     try:
-        response = requests.post(url, headers=headers, json=data)
+        response = requests.post(url, headers=headers, json=data, verify=False)
         
         print(f"📡 Status Code API Late : {response.status_code}")
         print(f"📄 Réponse brute : {response.text}")
@@ -339,20 +446,65 @@ def main():
     os.makedirs(output_folder, exist_ok=True)
 
     access_token = get_access_token()
-    user_id = get_user_id(access_token, STREAMER_NAME)
-    if not user_id:
-        print("❌ Streamer non trouvé.")
+    access_token = get_access_token()
+    
+    broadcaster_id = None
+    game_id = None
+
+    print(f"🔍 Recherche en mode : {SEARCH_TYPE.upper()} ('{SEARCH_QUERY}')")
+
+    if SEARCH_TYPE == "channel":
+        broadcaster_id = get_user_id(access_token, SEARCH_QUERY)
+        if not broadcaster_id:
+            print(f"❌ Streamer '{SEARCH_QUERY}' non trouvé.")
+            return
+    elif SEARCH_TYPE == "game":
+        game_id = get_game_id(access_token, SEARCH_QUERY)
+        if not game_id:
+            print(f"❌ Jeu '{SEARCH_QUERY}' non trouvé.")
+            return
+    else:
+        print("❌ Mauvais SEARCH_TYPE (mettre 'channel' ou 'game')")
         return
+
+    # Calcul de la date de départ (started_at) selon la période choisie
+    started_at_str = None
+    if SEARCH_PERIOD == "24h":
+        started_at_str = (datetime.utcnow() - timedelta(days=1)).isoformat() + 'Z'
+    elif SEARCH_PERIOD == "7d":
+        started_at_str = (datetime.utcnow() - timedelta(days=7)).isoformat() + 'Z'
+    elif SEARCH_PERIOD == "30d":
+        started_at_str = (datetime.utcnow() - timedelta(days=30)).isoformat() + 'Z'
+    elif SEARCH_PERIOD == "all":
+        started_at_str = None # Pas de filtre de date
+    else:
+        print(f"⚠️ Période '{SEARCH_PERIOD}' inconnue, utilisation de 24h par défaut.")
+        started_at_str = (datetime.utcnow() - timedelta(days=1)).isoformat() + 'Z'
+
+    print(f"📅 Période de recherche : {SEARCH_PERIOD.upper()}")
 
     # On récupère une LISTE de candidats (non téléchargés)
     clips_data = get_clips(
-        access_token, user_id,
+        access_token, 
+        broadcaster_id=broadcaster_id, 
+        game_id=game_id,
         first=max(10, min(100, MAX_API_CLIPS)),
-        started_at=(datetime.utcnow() - timedelta(hours=24)).isoformat() + 'Z'
+        started_at=started_at_str
     )
     if not clips_data:
         print("❌ Aucun clip trouvé.")
         return
+
+    # Filtrage Langue si demandé
+    if CLIP_LANGUAGE:
+        print(f"🔎 Filtrage par langue : {CLIP_LANGUAGE}")
+        before_count = len(clips_data)
+        clips_data = [c for c in clips_data if c.get('language') == CLIP_LANGUAGE]
+        print(f"   (Reste {len(clips_data)} clips sur {before_count})")
+
+        if not clips_data:
+            print("❌ Aucun clip ne correspond à la langue demandée.")
+            return
 
     # Trier par vues décroissantes (on veut les meilleurs d'abord)
     clips_data = sorted(clips_data, key=lambda c: c['view_count'], reverse=True)
@@ -363,6 +515,7 @@ def main():
     for video_index in range(1, NB_VIDEOS + 1):
         courant = []
         total = 0.0
+        current_video_title = "Best Of Twitch" # Valeur par défaut
 
         # Ajoute des clips tant qu'on n'a pas atteint la durée minimale
         while total < TARGET_SECONDS and idx_clip < len(clips_data):
@@ -392,6 +545,10 @@ def main():
                     d = v.duration
             except Exception:
                 continue  # clip illisible, on passe
+            
+            # Si c'est le premier clip du montage, on garde son titre comme titre principal
+            if not courant:
+                current_video_title = clip_title
 
             courant.append(file_path)
             total += d
@@ -405,15 +562,18 @@ def main():
             print(f"⛔ Pas assez de contenu pour fabriquer la vidéo {video_index} (manque {int(TARGET_SECONDS - total)} s).")
             break
 
-        groupes.append(courant)
+        groupes.append({'paths': courant, 'title': current_video_title})
 
     if not groupes:
         print("❌ Pas assez de clips pour créer une vidéo complète.")
         return
 
     # Génération + envoi
-    for idx, groupe in enumerate(groupes, start=1):
-        print(f"\n===== Génération de la vidéo {idx}/{len(groupes)} (≥ {TARGET_SECONDS}s) =====")
+    for idx, video_data in enumerate(groupes, start=1):
+        groupe = video_data['paths']
+        video_title = video_data['title']
+        
+        print(f"\\n===== Génération de la vidéo {idx}/{len(groupes)} (≥ {TARGET_SECONDS}s) =====")
         first_clip = groupe[0]
         temp_frame = first_clip.replace(".mp4", f"_frame_{idx}.jpg")
         if not extraire_image(first_clip, temp_frame):
@@ -424,15 +584,23 @@ def main():
         output_final = os.path.join(output_folder, f"tiktok_final_{idx}.mp4")
         montage_tiktok(groupe, crop_params, output_final)
         
-        # Envoi FTP
-        remote_filename = os.path.basename(output_final)
-        if upload_to_ftp(output_final, remote_filename):
-            
-            # Publication API
-            if publish_to_late_api(remote_filename, VIDEO_CAPTION):
+        # Si Auto-post activé
+        if AUTO_POST:
+            # Envoi FTP
+            remote_filename = os.path.basename(output_final)
+            if upload_to_ftp(output_final, remote_filename):
                 
-                # Si publié avec succès, on supprime du FTP
-                delete_file_from_ftp(remote_filename)
+                # Génération de la description avec Groq
+                generated_caption = generate_metadata(SEARCH_QUERY, video_title)
+                
+                # Publication API
+                if publish_to_late_api(remote_filename, generated_caption):
+                    
+                    # Si publié avec succès, on supprime du FTP
+                    delete_file_from_ftp(remote_filename)
+        else:
+            print(f"💾 Vidéo sauvegardée localement uniquement : {output_final}")
+            print("🚫 Auto-post désactivé (AUTO_POST = False).")
 
 
         # 🧹 Nettoyage des clips sources utilisés

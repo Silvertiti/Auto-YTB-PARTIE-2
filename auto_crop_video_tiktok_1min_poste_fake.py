@@ -17,7 +17,7 @@ STREAMER_NAME = "anyme023"
 
 # --- CONFIG TIKTOK / GETLATE ---
 # ⚠️ REMPLACEZ CECI PAR VOTRE NOUVELLE CLÉ API
-GETLATE_API_KEY = "sk_f0b574c160a3d5f763eb073a42a9265dc68d191b713da87ba3f904e01a152368" 
+GETLATE_API_KEY = os.getenv("LATE_API_KEY") 
 
 # Description optimisée
 TIKTOK_DESCRIPTION = (
@@ -28,8 +28,8 @@ TIKTOK_DESCRIPTION = (
 MAX_API_CLIPS = NB_VIDEOS * 40 
 # ==========================
 
-client_id = 'nhplbk0cauctrdgh13rf75sv387lye'
-client_secret = 'cycmd8gr3xozmxacw8yj7v3tb9d1qz'
+client_id = os.getenv("TWITCH_CLIENT_ID")
+client_secret = os.getenv("TWITCH_CLIENT_SECRET")
 
 # -------- Utils API --------
 

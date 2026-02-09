@@ -1,0 +1,29 @@
+version: "3.8"
+
+services:
+  twitch-poster-app:
+    build: .
+    container_name: twitch_bot_container
+    # Redémarrage automatique si le VPS reboot ou si le script plante
+    restart: always
+
+    # Mapping du port pour accéder à l'interface HTML (Flask)
+    # Si tu utilises Streamlit, change 5000:5000 par 8501:8501
+    ports:
+      - "5000:5000"
+
+    # Chargement de tes clés API depuis le fichier .env
+    env_file:
+      - .env
+
+    # Volumes pour ne pas perdre les données et modifier le code en direct
+    volumes:
+      - .:/app # Synchronise tout le dossier (code, modèles, etc.)
+      - ./clips_downloaded:/app/clips_downloaded
+      - ./downloaded_clips.txt:/app/downloaded_clips.txt
+
+    # Optionnel : limite la mémoire pour éviter que YOLO ne fasse planter le VPS
+    deploy:
+      resources:
+        limits:
+          memory: 2G

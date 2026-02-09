@@ -7,8 +7,8 @@ from ultralytics import YOLO
 from moviepy.editor import VideoFileClip, CompositeVideoClip
 
 # Données Twitch
-client_id = 'nhplbk0cauctrdgh13rf75sv387lye'
-client_secret = 'cycmd8gr3xozmxacw8yj7v3tb9d1qz'
+client_id = os.getenv("TWITCH_CLIENT_ID")
+client_secret = os.getenv("TWITCH_CLIENT_SECRET")
 
 # 📥 Obtenir le token d'accès
 def get_access_token():

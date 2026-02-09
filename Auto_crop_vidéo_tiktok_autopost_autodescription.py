@@ -1,20 +1,54 @@
 import os
+import sys
 import subprocess
 import cv2
+import ftplib
+import imageio_ffmpeg
 import requests
+import ftplib
 from datetime import datetime, timedelta
 from ultralytics import YOLO
 try:
     from moviepy.editor import VideoFileClip, concatenate_videoclips, CompositeVideoClip
 except ImportError:
     from moviepy import VideoFileClip, concatenate_videoclips, CompositeVideoClip
+from groq import Groq
+from dotenv import load_dotenv
+
+# Charger les variables d'environnement
+load_dotenv()
+
+# Groq Client Initialization
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 # ========= CONFIG =========
 NB_VIDEOS = 1        # << Nombre de vidéos finales à générer
 TARGET_SECONDS = 60  # << Durée MINIMALE par vidéo
 STREAMER_NAME = "anyme023"
-BOT_TOKEN = "7342966721:AAE6_C_LuyvcXaAuArlQ2AUz-lQUIFQ3Y4s"
-CHAT_ID = "1998327169"
+
+# FTP CONFIG
+FTP_HOST = os.getenv("FTP_HOST")
+FTP_USER = os.getenv("FTP_USER")
+FTP_PASS = os.getenv("FTP_PASS")
+REMOTE_DIR = "www"
+BASE_URL = "https://silvertiti.fr"
+
+# POSTING CONFIG (Late API / TikTok)
+LATE_API_KEY = os.getenv("LATE_API_KEY")
+#TIKTOK_ACCOUNT_ID = os.getenv("TIKTOK_ACCOUNT_ID_HAWAII") # HAWAIISERVICE
+TIKTOK_ACCOUNT_ID = os.getenv("TIKTOK_ACCOUNT_ID_BLACKGEN") # BlackGEN
+
+
+# Paramètres TikTok
+TIKTOK_SETTINGS = {
+    'privacy_level': 'PUBLIC_TO_EVERYONE', # 'PUBLIC_TO_EVERYONE', 'FRIENDS_ONLY', 'PRIVATE_TO_MYSELF'
+    'allow_comment': True,
+    'allow_duet': True,
+    'allow_stitch': True,
+    'content_preview_confirmed': True,
+    'express_consent_given': True
+}
+PUBLISH_NOW = True # True pour publier direct, False pour brouillon
 
 # On interroge suffisamment de clips côté API, mais on ne télécharge qu'à la demande.
 MAX_API_CLIPS = NB_VIDEOS * 40  # augmente si nécessaire
@@ -50,12 +84,15 @@ def get_clips(access_token, broadcaster_id, first=50, started_at=None):
 
 def telecharger_clip(url, output_file):
     print(f"⏬ Téléchargement de {url}...")
-    result = subprocess.run(["streamlink", "--twitch-disable-ads", url, "best", "-o", output_file])
+    # Use python -m streamlink to ensure we use the installed module even if not in PATH
+    cmd = [sys.executable, "-m", "streamlink", "--twitch-disable-ads", url, "best", "-o", output_file]
+    result = subprocess.run(cmd)
     return result.returncode == 0 and os.path.exists(output_file)
 
 def extraire_image(video_file, output_image):
+    ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
     subprocess.run(
-        ["ffmpeg", "-y", "-ss", "00:00:01", "-i", video_file, "-frames:v", "1", output_image],
+        [ffmpeg_exe, "-y", "-ss", "00:00:01", "-i", video_file, "-frames:v", "1", output_image],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
     )
     return os.path.exists(output_image)
@@ -69,7 +106,7 @@ def blur_frame(image, ksize=35):
 
 # -------- Détection webcam --------
 
-def detecter_webcam(image_path, model_path="runs/detect/train6/weights/best.pt"):
+def detecter_webcam(image_path, model_path="best.pt"):
     model = YOLO(model_path)
     img = cv2.imread(image_path)
     results = model.predict(source=image_path, conf=0.25, save=False, show=False)
@@ -187,7 +224,7 @@ def montage_tiktok(clips_paths, crop_params, output_path):
             output_path,
             codec="libx264",
             audio_codec="aac",
-            logger=None
+            logger='bar' # << Barre de chargement activée
         )
         print(f"✅ Exporté : {output_path}")
     finally:
@@ -210,21 +247,147 @@ def ajouter_clip_telecharge(fichier_txt, clip_id, clip_title):
         f.write(f"{clip_id}\n")
     print(f"📝 Clip noté comme téléchargé : {clip_id}")
 
-# -------- Telegram --------
 
-def envoyer_telegram(file_path, bot_token, chat_id):
-    print("📲 Envoi sur Telegram…")
-    url = f"https://api.telegram.org/bot{bot_token}/sendVideo"
-    with open(file_path, 'rb') as f:
-        response = requests.post(
-            url,
-            data={'chat_id': chat_id, 'caption': "Voici ta vidéo TikTok 🥳"},
-            files={'video': f}
+# -------- FTP --------
+
+def upload_to_ftp(local_path, remote_name):
+    if not os.path.exists(local_path):
+        print(f"❌ Erreur : Le fichier local '{local_path}' n'existe pas.")
+        return False
+
+    try:
+        print(f"🚀 Connexion FTP vers {FTP_HOST}...")
+        with ftplib.FTP(FTP_HOST, FTP_USER, FTP_PASS) as ftp:
+            ftp.cwd(REMOTE_DIR)
+            print(f"📂 Dossier FTP : {ftp.pwd()}")
+
+            print(f"📤 Envoi de '{local_path}' vers '{remote_name}'...")
+            with open(local_path, "rb") as f:
+                ftp.storbinary(f"STOR {remote_name}", f)
+            
+            print("✅ Upload FTP terminé avec succès !")
+            return True
+
+    except Exception as e:
+        print(f"❌ Erreur Upload FTP : {e}")
+        return False
+
+def delete_file_from_ftp(remote_name):
+    try:
+        print(f"🗑️ Suppression FTP de '{remote_name}'...")
+        with ftplib.FTP(FTP_HOST, FTP_USER, FTP_PASS) as ftp:
+            ftp.cwd(REMOTE_DIR)
+            ftp.delete(remote_name)
+        print("✅ Fichier supprimé du FTP avec succès !")
+        return True
+    except Exception as e:
+        print(f"❌ Erreur suppression FTP : {e}")
+        return False
+# -------- Groq Metadata Generation --------
+
+def generate_metadata(streamer_name, titre_clip_twitch):
+    print(f"🧠 Génération des métadonnées avec Groq pour : {titre_clip_twitch}...")
+    
+    system_instruction = """
+Tu es un expert en viralité pour TikTok et YouTube Shorts.
+Ton but est de générer les métadonnées pour un clip vidéo.
+
+INSTRUCTIONS :
+1. Analyse le NOM DU STREAMER et le TITRE DU CLIP fournis.
+2. Génère un TITRE CLICKBAIT (Court, mots-clés en MAJUSCULES, 2-3 emojis).
+3. Génère une liste de HASHTAGS. Tu dois mélanger des hashtags génériques (comme #TwitchFR #BestOfTwitch) ET des hashtags précis liés au sujet du clip (ex: le nom du jeu, le thème "CultureG", "Minecraft", etc.).
+
+FORMAT DE RÉPONSE STRICT (2 lignes maximum, pas de guillemets, pas de préfixe "Titre:") :
+[LIGNE 1 : TON TITRE ICI]
+[LIGNE 2 : TES HASHTAGS ICI]
+"""
+    try:
+        completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {
+                    "role": "system",
+                    "content": system_instruction
+                },
+                {
+                    "role": "user",
+                    "content": f"Streamer: {streamer_name}\nTitre du clip: {titre_clip_twitch}"
+                }
+            ],
+            temperature=0.7,
+            max_tokens=200,
+            top_p=1,
+            stream=False,
+            stop=None
         )
-    if response.status_code == 200:
-        print("✅ Vidéo envoyée sur Telegram !")
-    else:
-        print(f"❌ Erreur Telegram : {response.text}")
+        
+        # Le contenu est dans completion.choices[0].message.content
+        response_text = completion.choices[0].message.content.strip()
+        lines = response_text.split('\n')
+        
+        # Nettoyage basique pour récupérer titre et hashtags
+        titre = lines[0].strip() if len(lines) > 0 else "TITRE VIRAL GENERE"
+        hashtags = lines[1].strip() if len(lines) > 1 else "#Viral #Twitch"
+        
+        # On combine pour la description finale
+        final_caption = f"{titre}\n\n{hashtags}"
+        print(f"✨ Métadonnées générées :{final_caption}")
+        return final_caption
+
+    except Exception as e:
+        print(f"❌ Erreur Groq : {e}")
+        # Fallback si erreur
+        return f"Clip de {streamer_name} ! 🎬 #TwitchFR #BestOf #Viral"
+
+# -------- API Late --------
+
+def publish_to_late_api(video_filename, caption_content):
+    print("🚀 Préparation de la publication sur Late...")
+    
+    # URL publique du fichier sur le FTP
+    video_url = f"{BASE_URL}/{video_filename}"
+    
+    url = 'https://getlate.dev/api/v1/posts'
+    headers = {
+        'Authorization': f'Bearer {LATE_API_KEY}',
+        'Content-Type': 'application/json'
+    }
+
+    data = {
+        'content': caption_content,
+        'mediaItems': [
+            {
+                'url': video_url, 
+                'type': 'video' 
+            }
+        ],
+        'platforms': [{'platform': 'tiktok', 'accountId': TIKTOK_ACCOUNT_ID}],
+        'tiktokSettings': TIKTOK_SETTINGS,
+        'publishNow': PUBLISH_NOW
+    }
+
+    try:
+        response = requests.post(url, headers=headers, json=data)
+        
+        print(f"📡 Status Code API Late : {response.status_code}")
+        print(f"📄 Réponse brute : {response.text}")
+
+        try:
+            res_data = response.json()
+        except ValueError:
+            print("❌ Impossible de lire le JSON (réponse vide ou HTML).")
+            return False
+        
+        if response.ok:
+            print(f"✅ Posté avec succès sur Late ! ID: {res_data.get('_id', res_data.get('id', 'Inconnu'))}")
+            return True
+        else:
+            print("❌ L'API Late a renvoyé une erreur :", res_data)
+            return False
+            
+    except Exception as e:
+        print("❌ Erreur lors de l'appel API Late :", e)
+        return False
 
 # -------- Main --------
 
@@ -265,6 +428,7 @@ def main():
     for video_index in range(1, NB_VIDEOS + 1):
         courant = []
         total = 0.0
+        current_video_title = "Best Of Twitch" # Valeur par défaut
 
         # Ajoute des clips tant qu'on n'a pas atteint la durée minimale
         while total < TARGET_SECONDS and idx_clip < len(clips_data):
@@ -294,6 +458,10 @@ def main():
                     d = v.duration
             except Exception:
                 continue  # clip illisible, on passe
+            
+            # Si c'est le premier clip du montage, on garde son titre comme titre principal
+            if not courant:
+                current_video_title = clip_title
 
             courant.append(file_path)
             total += d
@@ -307,15 +475,18 @@ def main():
             print(f"⛔ Pas assez de contenu pour fabriquer la vidéo {video_index} (manque {int(TARGET_SECONDS - total)} s).")
             break
 
-        groupes.append(courant)
+        groupes.append({'paths': courant, 'title': current_video_title})
 
     if not groupes:
         print("❌ Pas assez de clips pour créer une vidéo complète.")
         return
 
     # Génération + envoi
-    for idx, groupe in enumerate(groupes, start=1):
-        print(f"\n===== Génération de la vidéo {idx}/{len(groupes)} (≥ {TARGET_SECONDS}s) =====")
+    for idx, video_data in enumerate(groupes, start=1):
+        groupe = video_data['paths']
+        video_title = video_data['title']
+        
+        print(f"\\n===== Génération de la vidéo {idx}/{len(groupes)} (≥ {TARGET_SECONDS}s) =====")
         first_clip = groupe[0]
         temp_frame = first_clip.replace(".mp4", f"_frame_{idx}.jpg")
         if not extraire_image(first_clip, temp_frame):
@@ -325,7 +496,20 @@ def main():
         crop_params = detecter_webcam(temp_frame)
         output_final = os.path.join(output_folder, f"tiktok_final_{idx}.mp4")
         montage_tiktok(groupe, crop_params, output_final)
-        envoyer_telegram(output_final, BOT_TOKEN, CHAT_ID)
+        
+        # Envoi FTP
+        remote_filename = os.path.basename(output_final)
+        if upload_to_ftp(output_final, remote_filename):
+            
+            # Génération de la description avec Groq
+            generated_caption = generate_metadata(STREAMER_NAME, video_title)
+            
+            # Publication API
+            if publish_to_late_api(remote_filename, generated_caption):
+                
+                # Si publié avec succès, on supprime du FTP
+                delete_file_from_ftp(remote_filename)
+
 
         # 🧹 Nettoyage des clips sources utilisés
         print(f"🧹 Suppression des {len(groupe)} clips sources...")

@@ -1,0 +1,9 @@
+ultralytics
+opencv-python-headless
+moviepy
+groq
+requests
+urllib3
+python-dotenv
+imageio-ffmpeg
+streamlink
