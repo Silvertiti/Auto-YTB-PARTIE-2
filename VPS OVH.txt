@@ -1,0 +1,25 @@
+ssh ubuntu@51.91.56.161
+
+Iankee01
+
+Acceder dossier :
+cd ~/twitch_bot
+
+Suprimmer fichier : 
+rm [nom fichier] 
+
+Modifier fichier :
+nanon [nom fichier]
+
+Relancer :
+sudo docker-compose restart
+
+afficher etat :
+sudo docker ps
+
+Afficher Log :
+sudo docker logs --tail 20 twitch_bot_container
+
+
+Log console temps réel :
+sudo docker logs twitch_bot_container -f
