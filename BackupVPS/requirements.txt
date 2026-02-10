@@ -1,0 +1,12 @@
+requests
+urllib3<2.0
+python-dotenv
+Flask
+ultralytics
+opencv-python-headless
+moviepy
+imageio-ffmpeg
+streamlink
+yt-dlp @ https://github.com/yt-dlp/yt-dlp/archive/master.zip
+Pillow
+groq

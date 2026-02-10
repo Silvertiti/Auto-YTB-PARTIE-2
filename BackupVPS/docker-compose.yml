@@ -1,0 +1,52 @@
+version: "3.8"
+
+services:
+  # -------------------------------------------------------
+  # SERVICE 1 : TON APP EXISTANTE (Flask + Creation Video)
+  # -------------------------------------------------------
+  twitch-poster-app:
+    build: .
+    container_name: twitch_bot_container
+    restart: always
+
+    # Mapping du port pour l'interface HTML (Flask)
+    ports:
+      - "5000:5000"
+
+    # Chargement des cles API
+    env_file:
+      - .env
+
+    # Volumes (Donnees partagees)
+    volumes:
+      - .:/app 
+      - ./clips_downloaded:/app/clips_downloaded
+      - ./downloaded_clips.txt:/app/downloaded_clips.txt
+      - ./youtube_crashes_output:/app/youtube_crashes_output
+
+    # Limite memoire (YOLO)
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+
+  # -------------------------------------------------------
+  # SERVICE 2 : LE TRACKER DE STATS (IPv6 SPECIAL)
+  # -------------------------------------------------------
+  tiktok-stats-bot:
+    build: .
+    container_name: tiktok_stats_container
+    restart: always
+    
+    # CRUCIAL : Permet d'utiliser l'IPv6 du VPS
+    network_mode: "host"
+    
+    # On force ce conteneur a lancer uniquement le script de stats
+    command: python stats_daemon.py
+    
+    env_file:
+      - .env
+      
+    # On monte le dossier courant
+    volumes:
+      - .:/app
