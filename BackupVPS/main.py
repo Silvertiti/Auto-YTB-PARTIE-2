@@ -62,6 +62,7 @@ SCHEDULE_HOUR = 12   # Heure de programmation (0-23)
 SCHEDULE_MINUTE = 0  # Minute de programmation (0-59)
 AUTO_POST = False     # True = Post auto (FTP + API), False = Juste créer la vidéo localement
 SEND_TELEGRAM = True # True = Envoi sur Telegram, False = Non
+YOUTUBE_MODE = False  # True = YouTube Short (1 clip, pas de durée min, pas de TikTok)
 
 # On interroge suffisamment de clips côté API, mais on ne télécharge qu'à la demande.
 MAX_API_CLIPS = NB_VIDEOS * 250  # augmente si nécessaire
@@ -131,7 +132,7 @@ def blur_frame(image, ksize=35):
 
 # -------- LOGGING TIME --------
 
-def save_creation_log(streamer, title, filename, duration_seconds):
+def save_creation_log(streamer, title, filename, duration_seconds, video_duration=0):
     """Sauvegarde les stats de création dans un JSON"""
     entry = {
         "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -139,7 +140,8 @@ def save_creation_log(streamer, title, filename, duration_seconds):
         "video_title": title,
         "filename": filename,
         "processing_time_seconds": round(duration_seconds, 2),
-        "processing_time_human": str(timedelta(seconds=round(duration_seconds)))
+        "processing_time_human": str(timedelta(seconds=round(duration_seconds))),
+        "video_duration_seconds": round(video_duration, 2)
     }
     
     data = []
@@ -353,18 +355,22 @@ def generate_metadata(streamer_name, titre_clip_twitch):
     print(f"🧠 Génération des métadonnées avec Groq pour : {titre_clip_twitch}...")
     
     system_instruction = """
-Tu es un expert en viralité pour TikTok et YouTube Shorts.
-Ton but est de générer les métadonnées pour un clip vidéo.
+    Tu es un expert en viralité pour TikTok et YouTube Shorts.
+    Ton but est de générer un TITRE EXPLOSIF et SÉCURISÉ pour maximiser le taux de clic (CTR).
 
-INSTRUCTIONS:
-1. Analyse le NOM DU STREAMER et le TITRE DU CLIP fournis.
-2. Génère un TITRE CLICKBAIT (Court, mots-clés en MAJUSCULES, 2-3 emojis).
-3. Génère une liste de HASHTAGS. Tu dois mélanger des hashtags génériques (comme #TwitchFR #BestOfTwitch) ET des hashtags précis liés au sujet du clip (ex: le nom du jeu, le thème "CultureG", "Minecraft", etc.).
+    RÈGLES CRITIQUES (ANTI-BAN) :
+    1. ⛔ INTERDIT ABSOLU : Mots violents, gore ou "dangereux" (ex: "Tuer", "Mort", "Sang", "Couteau", "Arme", "Couper", "Drogue", "Suicide"). Utilise plutôt : "DÉTRUIT" (figuré), "EXPLOSE", "FINI", "CHOC".
+    2. ✅ STYLE : Court (< 50 caractères), Mots-clés principaux en MAJUSCULES, 2 à 3 émojis dynamiques (😱, 🔥, 🤣, 🚀, 🤯).
 
-FORMAT DE RÉPONSE STRICT (2 lignes maximum, pas de guillemets, pas de préfixe "Titre:"):
-[LIGNE 1 : TON TITRE ICI]
-[LIGNE 2 : TES HASHTAGS ICI]
-"""
+    INSTRUCTIONS :
+    1. Analyse le NOM DU STREAMER et le TITRE DU CLIP fournis.
+    2. Génère un TITRE CLICKBAIT (Formule de Question, de Défi ou de Réaction exagérée).
+    3. Génère une liste de HASHTAGS pertinents (Génériques comme #TwitchFR + Spécifiques comme le Jeu ou le Streamer).
+
+    FORMAT DE RÉPONSE STRICT (2 lignes maximum, sans guillemets, sans préfixe) :
+    [LIGNE 1 : TON TITRE ICI]
+    [LIGNE 2 : TES HASHTAGS ICI]
+    """
     try:
         completion = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
@@ -604,7 +610,7 @@ def main():
         current_video_title = "Best Of Twitch" # Valeur par défaut
 
         # Ajoute des clips tant qu'on n'a pas atteint la durée minimale
-        while total < TARGET_SECONDS and idx_clip < len(clips_data):
+        while idx_clip < len(clips_data):
             clip = clips_data[idx_clip]
             idx_clip += 1
 
@@ -642,8 +648,21 @@ def main():
             ajouter_clip_telecharge(fichier_tracking, clip_id, clip_title)
             deja_vus.add(clip_id)
 
-        # Si on n'a pas réussi à atteindre la durée minimale, on s'arrête là (pas de vidéo incomplète)
-        if total < TARGET_SECONDS:
+            # Mode YouTube : 1 seul clip suffit, on sort immédiatement
+            if YOUTUBE_MODE:
+                print(f"▶️ Mode YouTube Short : 1 clip ({d:.1f}s), pas de durée minimale")
+                break
+
+            # Mode normal : on continue tant qu'on n'a pas atteint la durée cible
+            if total >= TARGET_SECONDS:
+                break
+
+        # Vérification selon le mode
+        if not courant:
+            print(f"⛔ Aucun clip valide trouvé pour la vidéo {video_index}.")
+            break
+
+        if not YOUTUBE_MODE and total < TARGET_SECONDS:
             print(f"⛔ Pas assez de contenu pour fabriquer la vidéo {video_index} (manque {int(TARGET_SECONDS - total)} s).")
             break
 
@@ -686,8 +705,8 @@ def main():
         else:
             print("📧 Envoi Telegram désactivé (SEND_TELEGRAM = False)")
 
-        # Si Auto-post activé
-        if AUTO_POST:
+        # Si Auto-post activé (et pas en mode YouTube)
+        if AUTO_POST and not YOUTUBE_MODE:
             # Envoi FTP
             remote_filename = os.path.basename(output_final)
             if upload_to_ftp(output_final, remote_filename):
@@ -697,6 +716,9 @@ def main():
                     
                     # Si publié avec succès, on supprime du FTP
                     delete_file_from_ftp(remote_filename)
+        elif YOUTUBE_MODE:
+            print(f"▶️ Mode YouTube Short : pas de post TikTok.")
+            print(f"💾 Vidéo YouTube Short sauvegardée : {output_final}")
         else:
             print(f"💾 Vidéo sauvegardée localement uniquement : {output_final}")
             print("🚫 Auto-post désactivé (AUTO_POST = False).")
@@ -723,7 +745,14 @@ def main():
         # --- FIN TIMER & SAUVEGARDE ---
         end_time = time.time()
         duration = end_time - start_time
-        save_creation_log(SEARCH_QUERY, video_title, os.path.basename(output_final), duration)
+        
+        # Récupérer la durée finale de la vidéo générée
+        final_vid_duration, _, _ = get_video_info(output_final)
+        
+        # Extraire le titre IA de la caption
+        ai_title = generated_caption.split('\n')[0].strip() if generated_caption else video_title
+        
+        save_creation_log(SEARCH_QUERY, ai_title, os.path.basename(output_final), duration, final_vid_duration)
         # ------------------------------
 
 def executer_pipeline(config_user):
@@ -733,7 +762,7 @@ def executer_pipeline(config_user):
     """
     # On déclare toutes les variables globales qu'on veut modifier
     global SEARCH_QUERY, SEARCH_TYPE, SEARCH_PERIOD, NB_VIDEOS, CLIP_LANGUAGE
-    global AUTO_POST, TARGET_SECONDS, SEND_TELEGRAM
+    global AUTO_POST, TARGET_SECONDS, SEND_TELEGRAM, YOUTUBE_MODE
     global PUBLISH_NOW, SCHEDULE_HOUR, SCHEDULE_MINUTE, TIKTOK_ACCOUNT_ID
 
     # On écrase les configurations par défaut avec celles reçues du Web
@@ -772,8 +801,17 @@ def executer_pipeline(config_user):
         else:
             print(f"⚠️ Variable d'environnement {env_var_name} non trouvée. Utilisation du défaut.")
 
+    # --- Mode YouTube ---
+    if 'youtube_mode' in config_user:
+        YOUTUBE_MODE = bool(config_user['youtube_mode'])
+        if YOUTUBE_MODE:
+            NB_VIDEOS = 1
+            AUTO_POST = False  # Pas de TikTok en mode YouTube
+            print("▶️ MODE YOUTUBE SHORT activé (1 clip, pas de durée min, pas de TikTok)")
+
     # Log pour vérifier dans la console Docker
-    print(f"🔄 PIPELINE : {SEARCH_QUERY} | AutoPost: {AUTO_POST} | Telegram: {SEND_TELEGRAM}")
+    mode_label = "▶️ YOUTUBE" if YOUTUBE_MODE else "📦 TIKTOK"
+    print(f"🔄 PIPELINE : {SEARCH_QUERY} | Mode: {mode_label} | AutoPost: {AUTO_POST} | Telegram: {SEND_TELEGRAM}")
     if AUTO_POST and not PUBLISH_NOW:
         print(f"🕒 Programmation définie pour : {SCHEDULE_HOUR:02d}:{SCHEDULE_MINUTE:02d}")
 

@@ -131,7 +131,7 @@ def blur_frame(image, ksize=35):
 
 # -------- LOGGING TIME --------
 
-def save_creation_log(streamer, title, filename, duration_seconds):
+def save_creation_log(streamer, title, filename, duration_seconds, video_duration=0):
     """Sauvegarde les stats de création dans un JSON"""
     entry = {
         "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -139,7 +139,8 @@ def save_creation_log(streamer, title, filename, duration_seconds):
         "video_title": title,
         "filename": filename,
         "processing_time_seconds": round(duration_seconds, 2),
-        "processing_time_human": str(timedelta(seconds=round(duration_seconds)))
+        "processing_time_human": str(timedelta(seconds=round(duration_seconds))),
+        "video_duration_seconds": round(video_duration, 2)
     }
     
     data = []
@@ -910,7 +911,14 @@ def main():
     # ---- Timer & Logs ----
     end_time = time.time()
     duration = end_time - start_time
-    save_creation_log(SEARCH_QUERY, clip_title, os.path.basename(output_final), duration)
+    
+    # Récupérer la durée finale de la vidéo
+    final_vid_duration, _, _ = get_video_info(output_final)
+    
+    # Extraire le titre IA de la caption
+    ai_title = generated_caption.split('\n')[0].strip() if generated_caption else clip_title
+
+    save_creation_log(SEARCH_QUERY, ai_title, os.path.basename(output_final), duration, final_vid_duration)
     
     print(f"\n{'=' * 55}")
     print(f"  🎉 TERMINÉ en {duration:.0f}s !")

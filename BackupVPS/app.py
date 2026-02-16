@@ -106,7 +106,8 @@ def add_to_queue_classic():
         "auto_post": data.get('auto_post', False),
         "send_telegram": data.get('send_telegram', True),
         "publish_now": True,
-        "tiktok_account_key": data.get('tiktok_account', None)
+        "tiktok_account_key": data.get('tiktok_account', None),
+        "youtube_mode": data.get('youtube_mode', False)
     }
 
     with job_lock:
@@ -163,21 +164,24 @@ def add_to_queue_live():
 # --- ROUTES CLASSIQUES ---
 ANALYTICS_FILE = 'video_analytics.json'
 TRACKING_FILE = 'tracking.json'
-SCAN_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'get_last_10.py')
+SCAN_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'get_last_10.py')
 
 @app.route('/video_analytics.json')
 def serve_analytics(): return send_from_directory('.', 'video_analytics.json')
 
+@app.route('/creation_logs.json')
+def serve_creation_logs(): return send_from_directory('.', 'creation_logs.json')
+
 @app.route('/force_scan', methods=['POST'])
 def force_scan():
-    """Lance le scan des stats TikTok en arrière-plan"""
+    """Lance le scan des stats TikTok en arrière-plan (force = re-vérifie TOUTES les vidéos)"""
     try:
-        # Lancer get_last_10.py en background
+        # Lancer get_last_10.py en background avec --force
         subprocess.Popen(
-            [sys.executable, SCAN_SCRIPT],
+            [sys.executable, SCAN_SCRIPT, '--force'],
             cwd=os.path.dirname(os.path.abspath(__file__))
         )
-        return jsonify({"status": "success", "message": "🔄 Scan lancé en arrière-plan !"})
+        return jsonify({"status": "success", "message": "🔄 Scan FORCÉ lancé (toutes les vidéos, y compris dormantes) !"})
     except Exception as e:
         return jsonify({"status": "error", "message": f"Erreur lancement scan : {e}"})
 

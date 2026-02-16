@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,16 +8,331 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { background-color: #0f172a; color: #cbd5e1; }
-        .input-dark { background-color: #1e293b; border: 1px solid #334155; color: white; }
-        .input-dark:focus { border-color: #3b82f6; outline: none; }
-        input::-webkit-calendar-picker-indicator { opacity: 0; }
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 50; align-items: center; justify-content: center; }
-        .modal.active { display: flex; }
-        .sortable-header { cursor: pointer; user-select: none; transition: color 0.2s; }
-        .sortable-header:hover { color: #ffffff; }
+        body {
+            background-color: #0f172a;
+            color: #cbd5e1;
+        }
+
+        .input-dark {
+            background-color: #1e293b;
+            border: 1px solid #334155;
+            color: white;
+        }
+
+        .input-dark:focus {
+            border-color: #3b82f6;
+            outline: none;
+        }
+
+        input::-webkit-calendar-picker-indicator {
+            opacity: 0;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 50;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .sortable-header {
+            cursor: pointer;
+            user-select: none;
+            transition: color 0.2s;
+        }
+
+        .sortable-header:hover {
+            color: #ffffff;
+        }
+
+        /* Tab system */
+        .tab-btn {
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .tab-btn.active {
+            color: #3b82f6;
+        }
+
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            border-radius: 2px;
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Account cards */
+        .account-card {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.95));
+            border: 1px solid rgba(71, 85, 105, 0.4);
+            border-radius: 16px;
+            padding: 20px;
+            backdrop-filter: blur(12px);
+            transition: all 0.3s ease;
+        }
+
+        .account-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(59, 130, 246, 0.5);
+            box-shadow: 0 12px 40px rgba(59, 130, 246, 0.12);
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .ratio-bar {
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(51, 65, 85, 0.6);
+            overflow: hidden;
+        }
+
+        .ratio-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .global-stat-card {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.08));
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        /* Tendances controls */
+        .toggle-group {
+            display: inline-flex;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #334155;
+        }
+
+        .toggle-btn {
+            padding: 6px 16px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            background: transparent;
+            color: #64748b;
+            border: none;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            letter-spacing: 0.5px;
+        }
+
+        .toggle-btn.active {
+            background: linear-gradient(135deg, #3b82f6, #6366f1);
+            color: white;
+        }
+
+        .toggle-btn:hover:not(.active) {
+            color: #cbd5e1;
+            background: rgba(51, 65, 85, 0.5);
+        }
+
+        .filter-select {
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: #e2e8f0;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            outline: none;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        .filter-select:focus {
+            border-color: #3b82f6;
+        }
+
+        .chart-container {
+            background: linear-gradient(180deg, rgba(30, 41, 59, 0.5), rgba(15, 23, 42, 0.8));
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(51, 65, 85, 0.4);
+        }
+
+        .insight-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 700;
+            background: rgba(59, 130, 246, 0.1);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        /* Video filters & pagination */
+        .video-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 12px 16px;
+            background: rgba(15, 23, 42, 0.6);
+            border-bottom: 1px solid rgba(51, 65, 85, 0.4);
+            align-items: center;
+        }
+
+        .search-input {
+            flex: 1;
+            min-width: 180px;
+            padding: 8px 12px 8px 36px;
+            border-radius: 8px;
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: #e2e8f0;
+            font-size: 13px;
+            font-weight: 500;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .search-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+
+        .search-wrapper {
+            position: relative;
+            flex: 1;
+            min-width: 180px;
+        }
+
+        .search-wrapper::before {
+            content: '🔍';
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 13px;
+            pointer-events: none;
+        }
+
+        .video-count {
+            font-size: 11px;
+            font-weight: 700;
+            color: #64748b;
+            white-space: nowrap;
+            padding: 6px 12px;
+            background: rgba(30, 41, 59, 0.8);
+            border-radius: 20px;
+            border: 1px solid #334155;
+        }
+
+        .video-count strong {
+            color: #3b82f6;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+            padding: 12px 16px;
+            background: rgba(15, 23, 42, 0.6);
+            border-top: 1px solid rgba(51, 65, 85, 0.4);
+        }
+
+        .page-btn {
+            min-width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            background: #1e293b;
+            color: #94a3b8;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .page-btn:hover:not(.active):not(:disabled) {
+            border-color: #3b82f6;
+            color: #e2e8f0;
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .page-btn.active {
+            background: linear-gradient(135deg, #3b82f6, #6366f1);
+            border-color: transparent;
+            color: white;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .page-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .page-info {
+            font-size: 11px;
+            color: #64748b;
+            font-weight: 600;
+            padding: 0 8px;
+        }
+
+        .per-page-select {
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: #94a3b8;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            outline: none;
+            cursor: pointer;
+        }
     </style>
 </head>
+
 <body class="min-h-screen p-4 md:p-8">
 
     <div class="max-w-4xl mx-auto space-y-6">
@@ -28,30 +344,45 @@
             </div>
 
             <div class="space-y-5">
-                <div class="grid grid-cols-3 gap-3">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <div class="col-span-1">
                         <label class="block text-xs text-slate-400 font-bold uppercase mb-1">Je cherche</label>
-                        <select id="type" onchange="updateList()" class="w-full p-3 rounded bg-slate-900 border border-slate-600 text-white focus:border-blue-500 outline-none">
+                        <select id="type" onchange="updateList()"
+                            class="w-full p-3 rounded bg-slate-900 border border-slate-600 text-white focus:border-blue-500 outline-none">
                             <option value="channel" selected>👤 Streamer</option>
                             <option value="game">🎮 Jeu</option>
                         </select>
                     </div>
-                    <div class="col-span-2">
+                    <div class="md:col-span-2">
                         <label class="block text-xs text-slate-400 font-bold uppercase mb-1">Nom</label>
                         <div class="relative">
-                            <input id="query" type="text" list="current-list" placeholder="Nom du Streamer..." class="w-full p-3 rounded bg-slate-900 border border-slate-600 text-white font-semibold focus:border-blue-500 outline-none">
+                            <input id="query" type="text" list="current-list" placeholder="Nom du Streamer..."
+                                class="w-full p-3 rounded bg-slate-900 border border-slate-600 text-white font-semibold focus:border-blue-500 outline-none">
                         </div>
                     </div>
                 </div>
 
                 <datalist id="streamers-list">
-                    <option value="anyme023"><option value="JLTomy"><option value="Gotaga"><option value="Kamet0"><option value="Aminematue"><option value="ZeratoR"><option value="Squeezie"><option value="Domingo"><option value="Etoiles">
+                    <option value="anyme023">
+                    <option value="JLTomy">
+                    <option value="Gotaga">
+                    <option value="Kamet0">
+                    <option value="Aminematue">
+                    <option value="ZeratoR">
+                    <option value="Squeezie">
+                    <option value="Domingo">
+                    <option value="Etoiles">
                 </datalist>
                 <datalist id="games-list">
-                    <option value="Grand Theft Auto V"><option value="League of Legends"><option value="Just Chatting"><option value="Valorant"><option value="Minecraft"><option value="Fortnite">
+                    <option value="Grand Theft Auto V">
+                    <option value="League of Legends">
+                    <option value="Just Chatting">
+                    <option value="Valorant">
+                    <option value="Minecraft">
+                    <option value="Fortnite">
                 </datalist>
 
-                <div class="grid grid-cols-3 gap-3">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div>
                         <label class="text-xs text-slate-400 font-bold uppercase mb-1">Période</label>
                         <select id="period" class="w-full p-2 rounded input-dark text-sm">
@@ -63,11 +394,13 @@
                     </div>
                     <div>
                         <label class="text-xs text-slate-400 font-bold uppercase mb-1">Quantité</label>
-                        <input id="nb_videos" type="number" value="1" min="1" class="w-full p-2 rounded input-dark text-sm">
+                        <input id="nb_videos" type="number" value="1" min="1"
+                            class="w-full p-2 rounded input-dark text-sm">
                     </div>
                     <div>
                         <label class="text-xs text-slate-400 font-bold uppercase mb-1">Langue</label>
-                        <input id="lang" type="text" value="fr" class="w-full p-2 rounded input-dark text-center text-sm uppercase">
+                        <input id="lang" type="text" value="fr"
+                            class="w-full p-2 rounded input-dark text-center text-sm uppercase">
                     </div>
                 </div>
 
@@ -76,42 +409,57 @@
                 <div>
                     <div class="flex justify-between mb-1">
                         <label class="text-xs text-slate-400 font-bold uppercase">Compte TikTok</label>
-                        <button onclick="openAccountModal()" class="text-xs text-blue-400 hover:text-white transition">+ Ajouter</button>
+                        <button onclick="openAccountModal()" class="text-xs text-blue-400 hover:text-white transition">+
+                            Ajouter</button>
                     </div>
-                    <select id="tiktok_account" class="w-full p-3 rounded bg-slate-900 border border-slate-600 text-white focus:border-pink-500 outline-none">
+                    <select id="tiktok_account"
+                        class="w-full p-3 rounded bg-slate-900 border border-slate-600 text-white focus:border-pink-500 outline-none">
                         {% for account in accounts %}
-                            <option value="{{ account }}">{{ account }}</option>
+                        <option value="{{ account }}">{{ account }}</option>
                         {% else %}
-                            <option value="" disabled selected>-- Aucun compte --</option>
+                        <option value="" disabled selected>-- Aucun compte --</option>
                         {% endfor %}
                     </select>
                 </div>
 
                 <div class="bg-slate-900/50 p-3 rounded border border-slate-700">
-                    <div class="flex justify-between items-center">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                         <label class="flex items-center cursor-pointer">
-                            <input type="checkbox" id="send_telegram" checked class="w-4 h-4 rounded bg-slate-800 border-slate-600 text-blue-500">
+                            <input type="checkbox" id="send_telegram" checked
+                                class="w-4 h-4 rounded bg-slate-800 border-slate-600 text-blue-500">
                             <span class="ml-2 text-sm">Telegram</span>
                         </label>
                         <label class="flex items-center cursor-pointer">
-                            <input type="checkbox" id="auto_post" onchange="toggleSchedule()" class="w-4 h-4 rounded bg-slate-800 border-slate-600 text-pink-500">
+                            <input type="checkbox" id="auto_post" onchange="toggleSchedule()"
+                                class="w-4 h-4 rounded bg-slate-800 border-slate-600 text-pink-500">
                             <span class="ml-2 text-sm text-pink-400">Auto-Post TikTok</span>
                         </label>
+                        <label class="flex items-center cursor-pointer" id="yt_label">
+                            <input type="checkbox" id="youtube_mode" onchange="toggleYoutubeMode()"
+                                class="w-4 h-4 rounded bg-slate-800 border-slate-600 text-red-500">
+                            <span class="ml-2 text-sm text-red-400 font-bold">▶️ YouTube</span>
+                        </label>
                     </div>
-                    <div id="schedule_zone" class="hidden mt-3 pt-3 border-t border-slate-700 flex items-center justify-between">
+                    <div id="schedule_zone"
+                        class="hidden mt-3 pt-3 border-t border-slate-700 flex items-center justify-between">
                         <label class="flex items-center cursor-pointer">
-                            <input type="checkbox" id="publish_now" checked onchange="toggleTimeInputs()" class="w-4 h-4 rounded bg-slate-800 text-green-500">
+                            <input type="checkbox" id="publish_now" checked onchange="toggleTimeInputs()"
+                                class="w-4 h-4 rounded bg-slate-800 text-green-500">
                             <span class="ml-2 text-xs text-green-400">Publier de suite</span>
                         </label>
-                        <div id="time_inputs" class="flex items-center gap-1 opacity-50 pointer-events-none transition-opacity">
-                            <input type="number" id="schedule_hour" value="18" class="w-10 p-1 text-center rounded bg-slate-800 border border-slate-600 text-xs">
+                        <div id="time_inputs"
+                            class="flex items-center gap-1 opacity-50 pointer-events-none transition-opacity">
+                            <input type="number" id="schedule_hour" value="18"
+                                class="w-10 p-1 text-center rounded bg-slate-800 border border-slate-600 text-xs">
                             <span class="text-slate-500 font-bold">:</span>
-                            <input type="number" id="schedule_minute" value="00" class="w-10 p-1 text-center rounded bg-slate-800 border border-slate-600 text-xs">
+                            <input type="number" id="schedule_minute" value="00"
+                                class="w-10 p-1 text-center rounded bg-slate-800 border border-slate-600 text-xs">
                         </div>
                     </div>
                 </div>
 
-                <button onclick="launchBot()" id="btn" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-3 rounded-lg shadow-lg transition transform active:scale-[0.98] mt-2">
+                <button onclick="launchBot()" id="btn"
+                    class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-3 rounded-lg shadow-lg transition transform active:scale-[0.98] mt-2">
                     🚀 LANCER
                 </button>
                 <div id="status" class="text-xs font-mono text-center text-slate-500 h-4"></div>
@@ -119,32 +467,240 @@
         </div>
 
         <div class="bg-slate-800 rounded-lg shadow-2xl border border-slate-700 overflow-hidden">
-            <div class="bg-slate-900 p-4 border-b border-slate-700 flex justify-between items-center">
-                <h2 class="text-sm font-bold text-slate-300 uppercase tracking-wide">📊 Statistiques TikTok</h2>
-                <div class="flex gap-2">
-                    <button onclick="forceScan()" class="text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-1 rounded font-bold transition flex items-center gap-1">
-                        🔄 FORCER SCAN
-                    </button>
-                    <button onclick="openVideoModal()" class="text-[10px] bg-green-600 hover:bg-green-500 text-white px-3 py-1 rounded font-bold transition">+ AJOUTER VIDÉO</button>
+            <div class="bg-slate-900 p-4 border-b border-slate-700">
+                <div class="flex flex-col xl:flex-row justify-between items-center gap-4">
+                    <div class="flex gap-4 overflow-x-auto w-full xl:w-auto pb-2 xl:pb-0 scrollbar-hide">
+                        <button onclick="switchTab('videos')" id="tab_videos"
+                            class="tab-btn active text-sm font-bold text-slate-300 uppercase tracking-wide pb-2 whitespace-nowrap">📊
+                            Vidéos</button>
+                        <button onclick="switchTab('comptes')" id="tab_comptes"
+                            class="tab-btn text-sm font-bold text-slate-500 uppercase tracking-wide pb-2 whitespace-nowrap">👤
+                            Comptes</button>
+                        <button onclick="switchTab('tendances')" id="tab_tendances"
+                            class="tab-btn text-sm font-bold text-slate-500 uppercase tracking-wide pb-2 whitespace-nowrap">📈
+                            Tendances</button>
+                        <button onclick="switchTab('creation')" id="tab_creation"
+                            class="tab-btn text-sm font-bold text-slate-500 uppercase tracking-wide pb-2 whitespace-nowrap">⚡
+                            Vitesse Création</button>
+                        <button onclick="switchTab('graphiques')" id="tab_graphiques"
+                            class="tab-btn text-sm font-bold text-slate-500 uppercase tracking-wide pb-2 whitespace-nowrap">📊
+                            Graphiques</button>
+                    </div>
+                    <div class="flex flex-wrap justify-center gap-2 w-full xl:w-auto">
+                        <button onclick="exportForAI()"
+                            class="text-[10px] bg-purple-600 hover:bg-purple-500 text-white px-3 py-1 rounded font-bold transition flex items-center gap-1">
+                            🤖 EXPORTER IA
+                        </button>
+                        <button onclick="forceScan()"
+                            class="text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-1 rounded font-bold transition flex items-center gap-1">
+                            🔄 FORCER SCAN
+                        </button>
+                        <button onclick="openVideoModal()"
+                            class="text-[10px] bg-green-600 hover:bg-green-500 text-white px-3 py-1 rounded font-bold transition">+
+                            AJOUTER VIDÉO</button>
+                    </div>
                 </div>
             </div>
-            
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
-                    <thead class="bg-slate-900/50 text-slate-400 text-[10px] uppercase font-bold">
-                        <tr>
-                            <th class="p-4 sortable-header" onclick="sortTable('account')">Compte <span id="sort_account"></span></th>
-                            <th class="p-4 sortable-header" onclick="sortTable('title')">Vidéo <span id="sort_title"></span></th>
-                            <th class="p-4 text-center sortable-header" onclick="sortTable('views')">Vues / Évol. <span id="sort_views"></span></th>
-                            <th class="p-4 text-center sortable-header" onclick="sortTable('likes')">Likes <span id="sort_likes"></span></th>
-                            <th class="p-4 text-center sortable-header text-yellow-500" onclick="sortTable('ratio')">Ratio % <span id="sort_ratio"></span></th>
-                            <th class="p-4 text-right sortable-header" onclick="sortTable('pubDateObj')">📅 Date Pub. <span id="sort_pubDateObj">▼</span></th>
-                        </tr>
-                    </thead>
-                    <tbody id="table_body" class="divide-y divide-slate-700">
-                    </tbody>
-                </table>
+
+            <!-- TAB VIDÉOS -->
+            <div id="content_videos" class="tab-content active">
+                <!-- Filtres vidéos -->
+                <div class="video-filters">
+                    <div class="search-wrapper">
+                        <input type="text" id="video_search" class="search-input" placeholder="Rechercher par titre ou compte..." oninput="onVideoFilterChange()">
+                    </div>
+                    <select id="video_account_filter" class="filter-select" onchange="onVideoFilterChange()">
+                        <option value="__all__">🌐 Tous les comptes</option>
+                    </select>
+                    <label class="flex items-center gap-2 cursor-pointer px-3 py-1 rounded-lg border border-slate-700 hover:border-green-500/50 transition" style="background: rgba(16,185,129,0.06);">
+                        <input type="checkbox" id="growth_only" checked onchange="onVideoFilterChange()"
+                            class="w-3.5 h-3.5 rounded bg-slate-800 border-slate-600 text-green-500 cursor-pointer">
+                        <span class="text-[11px] font-bold text-green-400 whitespace-nowrap">📈 En croissance</span>
+                    </label>
+                    <select id="video_per_page" class="per-page-select" onchange="onPerPageChange()">
+                        <option value="10">10 / page</option>
+                        <option value="25">25 / page</option>
+                        <option value="50">50 / page</option>
+                        <option value="999999">Tout</option>
+                    </select>
+                    <div class="video-count" id="video_count">0 vidéo(s)</div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-slate-900/50 text-slate-400 text-[10px] uppercase font-bold">
+                            <tr>
+                                <th class="p-4 sortable-header" onclick="sortTable('account')">Compte <span
+                                        id="sort_account"></span></th>
+                                <th class="p-4 sortable-header" onclick="sortTable('title')">Vidéo <span
+                                        id="sort_title"></span></th>
+                                <th class="p-4 text-center sortable-header" onclick="sortTable('views')">Vues / Évol.
+                                    <span id="sort_views"></span>
+                                </th>
+                                <th class="p-4 text-center sortable-header" onclick="sortTable('likes')">Likes <span
+                                        id="sort_likes"></span></th>
+                                <th class="p-4 text-center sortable-header text-yellow-500"
+                                    onclick="sortTable('ratio')">Ratio % <span id="sort_ratio"></span></th>
+                                <th class="p-4 text-right sortable-header" onclick="sortTable('pubDateObj')">📅 Date
+                                    Pub. <span id="sort_pubDateObj">▼</span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="table_body" class="divide-y divide-slate-700">
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Pagination -->
+                <div class="pagination" id="pagination_controls"></div>
             </div>
+
+            <!-- TAB COMPTES -->
+            <div id="content_comptes" class="tab-content">
+                <!-- Global summary -->
+                <div id="global_summary" class="grid grid-cols-2 md:grid-cols-4 gap-3 p-4"></div>
+                <!-- Camembert répartition des vues -->
+                <div class="p-4 pt-0">
+                    <div class="chart-container" style="padding: 20px;">
+                        <div class="text-xs text-slate-400 font-bold uppercase tracking-wider mb-4 text-center">🧩 Répartition des vues par compte</div>
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 24px; flex-wrap: wrap;">
+                            <div style="width: 220px; height: 220px; position: relative;">
+                                <canvas id="viewsDistChart"></canvas>
+                            </div>
+                            <div id="viewsDistLegend" style="display: flex; flex-direction: column; gap: 6px;"></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Account cards -->
+                <div id="accounts_grid" class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 pt-0"></div>
+            </div>
+
+            <!-- TAB TENDANCES -->
+            <div id="content_tendances" class="tab-content">
+                <div class="p-4 space-y-4">
+                    <!-- Controls -->
+                    <div class="flex flex-wrap justify-between items-center gap-3">
+                        <div class="flex items-center gap-3">
+                            <div class="toggle-group">
+                                <button onclick="setTrendMode('hour')" id="trend_mode_hour" class="toggle-btn active">🕐
+                                    Par Heure</button>
+                                <button onclick="setTrendMode('day')" id="trend_mode_day" class="toggle-btn">📅 Par
+                                    Jour</button>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] text-slate-500 uppercase font-bold">Compte</span>
+                            <select id="trend_account_filter" onchange="renderTrendChart()" class="filter-select">
+                                <option value="__all__">🌐 Tous les comptes</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Insights -->
+                    <div id="trend_insights" class="flex flex-wrap gap-2"></div>
+
+                    <!-- Chart -->
+                    <div class="chart-container">
+                        <div style="height: 340px; position: relative;">
+                            <canvas id="trendCanvas"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB CREATION SPEED -->
+            <div id="content_creation" class="tab-content">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse min-w-[600px]">
+                        <thead class="bg-slate-900/50 text-slate-400 text-[10px] uppercase font-bold">
+                            <tr>
+                                <th class="p-4 sortable-header" onclick="sortCreationTable('date')">Date Création <span
+                                        id="sort_c_date">▼</span></th>
+                                <th class="p-4 sortable-header" onclick="sortCreationTable('video_title')">Vidéo <span
+                                        id="sort_c_video_title"></span></th>
+                                <th class="p-4 text-center sortable-header"
+                                    onclick="sortCreationTable('processing_time_seconds')">Durée Création <span
+                                        id="sort_c_processing_time_seconds"></span></th>
+                                <th class="p-4 text-center sortable-header"
+                                    onclick="sortCreationTable('video_duration_seconds')">Durée Vidéo <span
+                                        id="sort_c_video_duration_seconds"></span></th>
+                                <th class="p-4 text-center sortable-header text-yellow-500"
+                                    onclick="sortCreationTable('ratio')">Ratio (V/C) <span id="sort_c_ratio"></span>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="creation_table_body" class="divide-y divide-slate-700">
+                            <tr>
+                                <td colspan="5" class="p-8 text-center text-slate-500 italic">Chargement...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB GRAPHIQUES -->
+            <div id="content_graphiques" class="tab-content">
+                <div class="p-4 space-y-4">
+                    <div class="text-center mb-2">
+                        <h2 class="text-lg font-extrabold text-white">📊 Analyse Complète</h2>
+                        <p class="text-xs text-slate-500">Comparaisons et métriques détaillées de toutes vos vidéos</p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- 1. Vues par compte (bar horizontal) -->
+                        <div class="chart-container">
+                            <div class="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-3">📊 Vues totales par compte</div>
+                            <div style="height: 280px; position: relative;"><canvas id="gChart1"></canvas></div>
+                        </div>
+
+                        <!-- 2. Répartition des likes (doughnut) -->
+                        <div class="chart-container">
+                            <div class="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-3">❤️ Répartition des likes</div>
+                            <div style="height: 280px; position: relative;"><canvas id="gChart2"></canvas></div>
+                        </div>
+
+                        <!-- 3. Radar multi-critères -->
+                        <div class="chart-container">
+                            <div class="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-3">🕸️ Radar performance par compte</div>
+                            <div style="height: 300px; position: relative;"><canvas id="gChart3"></canvas></div>
+                        </div>
+
+                        <!-- 4. Vues vs Likes (stacked bar) -->
+                        <div class="chart-container">
+                            <div class="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-3">⚔️ Vues vs Likes par compte</div>
+                            <div style="height: 300px; position: relative;"><canvas id="gChart4"></canvas></div>
+                        </div>
+
+                        <!-- 5. Scatter Vues/Likes -->
+                        <div class="chart-container">
+                            <div class="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-3">🎯 Corrélation Vues / Likes</div>
+                            <div style="height: 300px; position: relative;"><canvas id="gChart5"></canvas></div>
+                        </div>
+
+                        <!-- 6. Polar Area Engagement -->
+                        <div class="chart-container">
+                            <div class="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-3">🧭 Engagement par compte</div>
+                            <div style="height: 300px; position: relative;"><canvas id="gChart6"></canvas></div>
+                        </div>
+
+                        <!-- 7. Top 10 vidéos -->
+                        <div class="chart-container md:col-span-2">
+                            <div class="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-3">🏆 Top 10 vidéos les plus vues</div>
+                            <div style="height: 320px; position: relative;"><canvas id="gChart7"></canvas></div>
+                        </div>
+
+                        <!-- 8. Nb vidéos par jour de la semaine -->
+                        <div class="chart-container">
+                            <div class="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-3">📅 Vidéos publiées par jour</div>
+                            <div style="height: 280px; position: relative;"><canvas id="gChart8"></canvas></div>
+                        </div>
+
+                        <!-- 9. Vues moyennes par heure -->
+                        <div class="chart-container">
+                            <div class="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-3">🕐 Vues moyennes par heure de publication</div>
+                            <div style="height: 280px; position: relative;"><canvas id="gChart9"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
     </div>
@@ -152,17 +708,22 @@
     <div id="accountModal" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-50 backdrop-blur-sm">
         <div class="bg-slate-800 p-6 rounded-lg border border-slate-600 w-80 shadow-2xl">
             <h3 class="font-bold text-white mb-4 text-center">Nouveau Compte</h3>
-            <input id="new_name" type="text" placeholder="Nom (ex: HAWAII)" class="w-full p-2 mb-3 rounded bg-slate-900 border border-slate-600 text-white text-sm">
-            <input id="new_id" type="text" placeholder="ID (ex: 697a...)" class="w-full p-2 mb-5 rounded bg-slate-900 border border-slate-600 text-white text-sm">
+            <input id="new_name" type="text" placeholder="Nom (ex: HAWAII)"
+                class="w-full p-2 mb-3 rounded bg-slate-900 border border-slate-600 text-white text-sm">
+            <input id="new_id" type="text" placeholder="ID (ex: 697a...)"
+                class="w-full p-2 mb-5 rounded bg-slate-900 border border-slate-600 text-white text-sm">
             <div class="flex justify-between">
-                <button onclick="closeAccountModal()" class="px-4 py-2 text-slate-400 hover:text-white text-sm">Annuler</button>
-                <button onclick="saveAccount()" class="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded text-sm font-bold">Sauvegarder</button>
+                <button onclick="closeAccountModal()"
+                    class="px-4 py-2 text-slate-400 hover:text-white text-sm">Annuler</button>
+                <button onclick="saveAccount()"
+                    class="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded text-sm font-bold">Sauvegarder</button>
             </div>
         </div>
     </div>
 
     <div id="chartModal" class="modal p-4" onclick="closeChartModal()">
-        <div class="bg-slate-800 w-full max-w-2xl p-6 rounded-xl border border-slate-600" onclick="event.stopPropagation()">
+        <div class="bg-slate-800 w-full max-w-2xl p-6 rounded-xl border border-slate-600"
+            onclick="event.stopPropagation()">
             <div class="flex justify-between items-start mb-4">
                 <h3 id="modalTitle" class="text-white font-bold truncate pr-4"></h3>
                 <button onclick="closeChartModal()" class="text-slate-400 hover:text-white text-xl">✕</button>
@@ -176,19 +737,25 @@
     <div id="videoModal" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-50 backdrop-blur-sm">
         <div class="bg-slate-800 p-6 rounded-lg border border-slate-600 w-96 shadow-2xl">
             <h3 class="font-bold text-white mb-4 text-center">🎥 Ajouter une vidéo à suivre</h3>
-            <input id="new_video_url" type="text" placeholder="https://www.tiktok.com/@user/video/123..." class="w-full p-3 mb-3 rounded bg-slate-900 border border-slate-600 text-white text-sm">
+            <input id="new_video_url" type="text" placeholder="https://www.tiktok.com/@user/video/123..."
+                class="w-full p-3 mb-3 rounded bg-slate-900 border border-slate-600 text-white text-sm">
             <div id="video_status" class="text-xs text-center mb-3 h-4"></div>
             <div class="flex justify-between">
-                <button onclick="closeVideoModal()" class="px-4 py-2 text-slate-400 hover:text-white text-sm">Annuler</button>
-                <button onclick="saveVideo()" class="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded text-sm font-bold">Ajouter</button>
+                <button onclick="closeVideoModal()"
+                    class="px-4 py-2 text-slate-400 hover:text-white text-sm">Annuler</button>
+                <button onclick="saveVideo()"
+                    class="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded text-sm font-bold">Ajouter</button>
             </div>
         </div>
     </div>
 
     <script>
         let myChart = null;
-        let globalData = []; 
+        let globalData = [];
+        let filteredData = [];
         let currentSort = { column: 'pubDateObj', direction: 'desc' };
+        let currentPage = 1;
+        let perPage = 10;
 
         function updateList() {
             const type = document.getElementById('type').value;
@@ -202,46 +769,76 @@
         function toggleSchedule() { document.getElementById('schedule_zone').classList.toggle('hidden', !document.getElementById('auto_post').checked); }
         function toggleTimeInputs() {
             const inputs = document.getElementById('time_inputs');
-            if(document.getElementById('publish_now').checked) inputs.classList.add('opacity-50', 'pointer-events-none');
+            if (document.getElementById('publish_now').checked) inputs.classList.add('opacity-50', 'pointer-events-none');
             else inputs.classList.remove('opacity-50', 'pointer-events-none');
+        }
+
+        function toggleYoutubeMode() {
+            const yt = document.getElementById('youtube_mode').checked;
+            const btn = document.getElementById('btn');
+            const nbInput = document.getElementById('nb_videos');
+            const autoPost = document.getElementById('auto_post');
+
+            if (yt) {
+                // Mode YouTube : 1 clip, pas de TikTok
+                btn.innerText = '▶️ LANCER (YouTube Short)';
+                btn.classList.remove('from-blue-600', 'to-blue-700', 'hover:from-blue-500', 'hover:to-blue-600');
+                btn.classList.add('from-red-600', 'to-red-700', 'hover:from-red-500', 'hover:to-red-600');
+                nbInput.value = 1;
+                nbInput.disabled = true;
+                nbInput.classList.add('opacity-50');
+                autoPost.checked = false;
+                toggleSchedule();
+                autoPost.disabled = true;
+                autoPost.closest('label').classList.add('opacity-30');
+            } else {
+                // Mode normal
+                btn.innerText = '🚀 LANCER';
+                btn.classList.remove('from-red-600', 'to-red-700', 'hover:from-red-500', 'hover:to-red-600');
+                btn.classList.add('from-blue-600', 'to-blue-700', 'hover:from-blue-500', 'hover:to-blue-600');
+                nbInput.disabled = false;
+                nbInput.classList.remove('opacity-50');
+                autoPost.disabled = false;
+                autoPost.closest('label').classList.remove('opacity-30');
+            }
         }
 
         function openAccountModal() { document.getElementById('accountModal').classList.replace('hidden', 'flex'); }
         function closeAccountModal() { document.getElementById('accountModal').classList.replace('flex', 'hidden'); }
         function closeChartModal() { document.getElementById('chartModal').classList.remove('active'); }
-        function openVideoModal() { 
-            document.getElementById('videoModal').classList.replace('hidden', 'flex'); 
+        function openVideoModal() {
+            document.getElementById('videoModal').classList.replace('hidden', 'flex');
             document.getElementById('new_video_url').value = '';
             document.getElementById('video_status').innerText = '';
         }
         function closeVideoModal() { document.getElementById('videoModal').classList.replace('flex', 'hidden'); }
 
         async function forceScan() {
-            if(!confirm("Lancer une mise à jour forcée des statistiques ?")) return;
+            if (!confirm("Lancer une mise à jour forcée des statistiques ?")) return;
             try {
                 const res = await fetch('/force_scan', { method: 'POST' });
                 const data = await res.json();
                 alert(data.message);
                 loadStats();
-            } catch(e) { alert("Erreur lors du lancement du scan."); }
+            } catch (e) { alert("Erreur lors du lancement du scan."); }
         }
 
         async function saveVideo() {
             const url = document.getElementById('new_video_url').value.trim();
-            if(!url) return;
+            if (!url) return;
             try {
-                const res = await fetch('/add_video', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({url}) });
+                const res = await fetch('/add_video', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url }) });
                 const data = await res.json();
                 document.getElementById('video_status').innerText = data.status === 'success' ? "✅ " + data.message : "❌ " + data.message;
-                if(data.status === 'success') { setTimeout(closeVideoModal, 1500); loadStats(); }
-            } catch(e) { console.error(e); }
+                if (data.status === 'success') { setTimeout(closeVideoModal, 1500); loadStats(); }
+            } catch (e) { console.error(e); }
         }
 
         async function saveAccount() {
             const name = document.getElementById('new_name').value;
             const id = document.getElementById('new_id').value;
-            if(!name || !id) return;
-            await fetch('/add_account', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({name, id}) });
+            if (!name || !id) return;
+            await fetch('/add_account', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, id }) });
             location.reload();
         }
 
@@ -262,11 +859,12 @@
                 send_telegram: document.getElementById('send_telegram').checked,
                 publish_now: document.getElementById('publish_now').checked,
                 schedule_hour: document.getElementById('schedule_hour').value,
-                schedule_minute: document.getElementById('schedule_minute').value
+                schedule_minute: document.getElementById('schedule_minute').value,
+                youtube_mode: document.getElementById('youtube_mode').checked
             };
 
             try {
-                const res = await fetch('/run', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+                const res = await fetch('/run', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 const data = await res.json();
                 status.innerText = (res.status === 429 ? "⚠️ " : (data.status === 'success' ? "✅ " : "❌ ")) + data.message;
                 status.className = "text-xs font-mono text-center mt-2 h-4 font-bold " + (data.status === 'success' ? "text-green-400" : "text-red-400");
@@ -282,7 +880,7 @@
                     const timestamp = Number(videoId >> 32n);
                     return new Date(timestamp * 1000);
                 }
-            } catch(e) { return null; }
+            } catch (e) { return null; }
             return null;
         }
 
@@ -298,13 +896,13 @@
 
             const diff = viewsNow - viewsPrev;
 
-            
+
             // 1. Si 0 vue en 1h -> Stagnation
-            if (diff === 0) return { icon: '=', color: 'text-slate-600 font-bold' }; 
-            
+            if (diff === 0) return { icon: '=', color: 'text-slate-600 font-bold' };
+
             // 2. Si +500 vues en 1h -> C'est un BUZZ (Orange Clignotant)
-            if (diff > 500) return { icon: '▲', color: 'text-orange-500 animate-pulse' }; 
-            
+            if (diff > 500) return { icon: '▲', color: 'text-orange-500 animate-pulse' };
+
             // 3. Si entre 1 et 499 vues -> Croissance normale (Vert)
             if (diff > 0) return { icon: '▲', color: 'text-green-400' };
 
@@ -330,7 +928,7 @@
                     const likes = last.likes || 0;
                     const ratio = views > 0 ? parseFloat(((likes / views) * 100).toFixed(2)) : 0;
                     const timestamp = last.last_updated || 'N/A';
-                    
+
                     let pubDateObj = last.upload_date ? new Date(last.upload_date) : getTikTokDate(url);
                     let pubDateStr = pubDateObj ? pubDateObj.toLocaleDateString('fr-FR', {
                         day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
@@ -354,9 +952,10 @@
                     };
                 });
 
-                renderTable();
+                populateVideoAccountFilter();
+                onVideoFilterChange();
 
-            } catch(e) {
+            } catch (e) {
                 console.error(e);
                 document.getElementById('table_body').innerHTML = "<tr><td colspan='6' class='p-8 text-center text-slate-500 italic'>En attente de données...</td></tr>";
             }
@@ -369,7 +968,142 @@
                 currentSort.column = column;
                 currentSort.direction = (column === 'title' || column === 'account') ? 'asc' : 'desc';
             }
+            currentPage = 1;
+            applyFiltersAndRender();
+        }
+
+        function populateVideoAccountFilter() {
+            const sel = document.getElementById('video_account_filter');
+            const currentVal = sel.value;
+            const accounts = new Set();
+            globalData.forEach(item => accounts.add(item.account || 'N/A'));
+
+            sel.innerHTML = '<option value="__all__">🌐 Tous les comptes</option>';
+            [...accounts].sort().forEach(acc => {
+                const opt = document.createElement('option');
+                opt.value = acc;
+                opt.textContent = `@${acc}`;
+                sel.appendChild(opt);
+            });
+            sel.value = currentVal || '__all__';
+        }
+
+        function onVideoFilterChange() {
+            currentPage = 1;
+            applyFiltersAndRender();
+        }
+
+        function onPerPageChange() {
+            perPage = parseInt(document.getElementById('video_per_page').value);
+            currentPage = 1;
+            applyFiltersAndRender();
+        }
+
+        function applyFiltersAndRender() {
+            const search = (document.getElementById('video_search').value || '').toLowerCase().trim();
+            const accountFilter = document.getElementById('video_account_filter').value;
+            const growthOnly = document.getElementById('growth_only').checked;
+
+            filteredData = globalData.filter(item => {
+                // Filtre par croissance (uniquement les vidéos qui prennent des vues)
+                if (growthOnly && item.trend && item.trend.icon !== '▲' && item.trend.icon !== 'NEW') return false;
+                // Filtre par compte
+                if (accountFilter !== '__all__' && (item.account || 'N/A') !== accountFilter) return false;
+                // Filtre par recherche
+                if (search) {
+                    const inTitle = (item.title || '').toLowerCase().includes(search);
+                    const inAccount = (item.account || '').toLowerCase().includes(search);
+                    if (!inTitle && !inAccount) return false;
+                }
+                return true;
+            });
+
             renderTable();
+        }
+
+        let viewsDistChartInstance = null;
+
+        function renderViewsDistChart() {
+            const accountMap = {};
+            globalData.forEach(item => {
+                const acc = item.account || 'N/A';
+                if (!accountMap[acc]) accountMap[acc] = 0;
+                accountMap[acc] += item.views;
+            });
+
+            const sorted = Object.entries(accountMap).sort((a, b) => b[1] - a[1]);
+            const labels = sorted.map(e => '@' + e[0]);
+            const data = sorted.map(e => e[1]);
+            const totalViews = data.reduce((s, v) => s + v, 0);
+
+            const chartColors = [
+                '#3b82f6', '#ec4899', '#10b981', '#f59e0b', '#8b5cf6',
+                '#f43f5e', '#06b6d4', '#84cc16', '#e879f9', '#fb923c',
+                '#14b8a6', '#a78bfa', '#facc15', '#64748b'
+            ];
+
+            if (viewsDistChartInstance) viewsDistChartInstance.destroy();
+
+            const ctx = document.getElementById('viewsDistChart').getContext('2d');
+            viewsDistChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: chartColors.slice(0, data.length),
+                        borderColor: '#0f172a',
+                        borderWidth: 2,
+                        hoverBorderColor: '#e2e8f0',
+                        hoverBorderWidth: 2,
+                        hoverOffset: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    cutout: '55%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#1e293b',
+                            borderColor: '#334155',
+                            borderWidth: 1,
+                            titleColor: '#e2e8f0',
+                            bodyColor: '#94a3b8',
+                            padding: 12,
+                            callbacks: {
+                                label: function(ctx) {
+                                    const val = ctx.parsed;
+                                    const pct = totalViews > 0 ? ((val / totalViews) * 100).toFixed(1) : 0;
+                                    return ` ${val.toLocaleString()} vues (${pct}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Custom legend
+            const legendEl = document.getElementById('viewsDistLegend');
+            legendEl.innerHTML = '';
+            sorted.forEach(([name, views], i) => {
+                const pct = totalViews > 0 ? ((views / totalViews) * 100).toFixed(1) : 0;
+                const color = chartColors[i % chartColors.length];
+                const row = document.createElement('div');
+                row.style.cssText = 'display:flex; align-items:center; gap:8px; font-size:12px;';
+                row.innerHTML = `
+                    <div style="width:10px; height:10px; border-radius:3px; background:${color}; flex-shrink:0;"></div>
+                    <span style="color:#e2e8f0; font-weight:700; min-width:100px;">@${name}</span>
+                    <span style="color:#64748b; font-weight:600;">${views.toLocaleString()} vues</span>
+                    <span style="color:${color}; font-weight:800; font-size:11px;">${pct}%</span>
+                `;
+                legendEl.appendChild(row);
+            });
+
+            if (sorted.length === 0) {
+                legendEl.innerHTML = '<div style="color:#64748b; font-size:12px; font-style:italic;">Aucune donnée</div>';
+            }
         }
 
         function renderTable() {
@@ -386,7 +1120,7 @@
                 }
             });
 
-            globalData.sort((a, b) => {
+            filteredData.sort((a, b) => {
                 let valA = a[currentSort.column];
                 let valB = b[currentSort.column];
                 if (valA < valB) return currentSort.direction === 'asc' ? -1 : 1;
@@ -394,30 +1128,124 @@
                 return 0;
             });
 
-            globalData.forEach(item => {
-                const tr = document.createElement('tr');
-                tr.className = "hover:bg-slate-700/50 cursor-pointer transition border-b border-slate-700/50";
-                
-                // IMPORTANT: C'est ici qu'on gère le clic sur la ligne
-                tr.onclick = function() { showChart(item.title, item.history); };
+            // Pagination
+            const total = filteredData.length;
+            const totalPages = Math.max(1, Math.ceil(total / perPage));
+            if (currentPage > totalPages) currentPage = totalPages;
+            const start = (currentPage - 1) * perPage;
+            const end = Math.min(start + perPage, total);
+            const pageData = filteredData.slice(start, end);
 
-                tr.innerHTML = `
-                    <td class="p-4 text-xs font-bold text-blue-400 whitespace-nowrap">@${item.account}</td>
-                    <td class="p-4 text-sm font-medium text-slate-200 truncate max-w-[180px]">
-                        <a href="${item.url}" target="_blank" class="hover:text-blue-400 hover:underline transition z-20 relative" onclick="event.stopPropagation()">
-                            ${item.title} 🔗
-                        </a>
-                    </td>
-                    <td class="p-4 text-center font-bold text-blue-400 text-sm">
-                        ${item.views.toLocaleString()} 
-                        <span class="${item.trend.color} ml-1 text-xs font-bold">${item.trend.icon}</span>
-                    </td>
-                    <td class="p-4 text-center font-bold text-red-400 text-sm">${item.likes.toLocaleString()}</td>
-                    <td class="p-4 text-center font-bold text-yellow-400 text-sm">${item.ratio}%</td>
-                    <td class="p-4 text-right text-[10px] text-slate-400 font-mono">${item.pubDateStr}</td>
-                `;
-                tbody.appendChild(tr);
-            });
+            // Compteur
+            const countEl = document.getElementById('video_count');
+            if (total === globalData.length) {
+                countEl.innerHTML = `<strong>${total}</strong> vidéo${total > 1 ? 's' : ''}`;
+            } else {
+                countEl.innerHTML = `<strong>${total}</strong> / ${globalData.length} vidéo${globalData.length > 1 ? 's' : ''}`;
+            }
+
+            // Rendu des lignes
+            if (pageData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan='6' class='p-8 text-center text-slate-500 italic'>Aucune vidéo trouvée</td></tr>`;
+            } else {
+                pageData.forEach(item => {
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-slate-700/50 cursor-pointer transition border-b border-slate-700/50";
+                    tr.onclick = function () { showChart(item.title, item.history); };
+
+                    tr.innerHTML = `
+                        <td class="p-4 text-xs font-bold text-blue-400 whitespace-nowrap">@${item.account}</td>
+                        <td class="p-4 text-sm font-medium text-slate-200 truncate max-w-[180px]">
+                            <a href="${item.url}" target="_blank" class="hover:text-blue-400 hover:underline transition z-20 relative" onclick="event.stopPropagation()">
+                                ${item.title} 🔗
+                            </a>
+                        </td>
+                        <td class="p-4 text-center font-bold text-blue-400 text-sm">
+                            ${item.views.toLocaleString()} 
+                            <span class="${item.trend.color} ml-1 text-xs font-bold">${item.trend.icon}</span>
+                        </td>
+                        <td class="p-4 text-center font-bold text-red-400 text-sm">${item.likes.toLocaleString()}</td>
+                        <td class="p-4 text-center font-bold text-yellow-400 text-sm">${item.ratio}%</td>
+                        <td class="p-4 text-right text-[10px] text-slate-400 font-mono">${item.pubDateStr}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            // Pagination controls
+            renderPagination(totalPages);
+        }
+
+        function renderPagination(totalPages) {
+            const container = document.getElementById('pagination_controls');
+            container.innerHTML = '';
+
+            if (totalPages <= 1) { container.style.display = 'none'; return; }
+            container.style.display = 'flex';
+
+            // Bouton précédent
+            const prevBtn = document.createElement('button');
+            prevBtn.className = 'page-btn';
+            prevBtn.innerHTML = '◀';
+            prevBtn.disabled = currentPage === 1;
+            prevBtn.onclick = () => { currentPage--; applyFiltersAndRender(); };
+            container.appendChild(prevBtn);
+
+            // Pages
+            const maxVisible = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+            if (endPage - startPage < maxVisible - 1) startPage = Math.max(1, endPage - maxVisible + 1);
+
+            if (startPage > 1) {
+                const first = document.createElement('button');
+                first.className = 'page-btn';
+                first.textContent = '1';
+                first.onclick = () => { currentPage = 1; applyFiltersAndRender(); };
+                container.appendChild(first);
+                if (startPage > 2) {
+                    const dots = document.createElement('span');
+                    dots.className = 'page-info';
+                    dots.textContent = '…';
+                    container.appendChild(dots);
+                }
+            }
+
+            for (let p = startPage; p <= endPage; p++) {
+                const btn = document.createElement('button');
+                btn.className = 'page-btn' + (p === currentPage ? ' active' : '');
+                btn.textContent = p;
+                btn.onclick = () => { currentPage = p; applyFiltersAndRender(); };
+                container.appendChild(btn);
+            }
+
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    const dots = document.createElement('span');
+                    dots.className = 'page-info';
+                    dots.textContent = '…';
+                    container.appendChild(dots);
+                }
+                const last = document.createElement('button');
+                last.className = 'page-btn';
+                last.textContent = totalPages;
+                last.onclick = () => { currentPage = totalPages; applyFiltersAndRender(); };
+                container.appendChild(last);
+            }
+
+            // Bouton suivant
+            const nextBtn = document.createElement('button');
+            nextBtn.className = 'page-btn';
+            nextBtn.innerHTML = '▶';
+            nextBtn.disabled = currentPage === totalPages;
+            nextBtn.onclick = () => { currentPage++; applyFiltersAndRender(); };
+            container.appendChild(nextBtn);
+
+            // Info page
+            const info = document.createElement('span');
+            info.className = 'page-info';
+            info.textContent = `${currentPage} / ${totalPages}`;
+            container.appendChild(info);
         }
 
         function showChart(title, history) {
@@ -435,18 +1263,26 @@
                 return da - db;
             });
 
+
+            // Downsampling pour éviter la surcharge (max ~20 points)
+            let finalData = sorted;
+            if (sorted.length > 20) {
+                const step = Math.ceil(sorted.length / 20);
+                finalData = sorted.filter((_, index) => index % step === 0 || index === sorted.length - 1);
+            }
+
             const ctx = document.getElementById('modalCanvas').getContext('2d');
             myChart = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: sorted.map(d => { 
+                    labels: finalData.map(d => {
                         // Gestion plus propre de l'heure
-                        const ts = d.last_updated || 'N/A'; 
-                        return ts.includes(' ') ? ts.split(' ')[1].substring(0, 5) : ts; 
+                        const ts = d.last_updated || 'N/A';
+                        return ts.includes(' ') ? ts.split(' ')[1].substring(0, 5) : ts;
                     }),
                     datasets: [
-                        { label: 'Vues', data: sorted.map(d => d.views || 0), borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)', fill: true, tension: 0.3, pointRadius: 4, yAxisID: 'y' },
-                        { label: 'Likes', data: sorted.map(d => d.likes || 0), borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', fill: true, tension: 0.3, pointRadius: 4, yAxisID: 'y1' }
+                        { label: 'Vues', data: finalData.map(d => d.views || 0), borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)', fill: true, tension: 0.3, pointRadius: 4, yAxisID: 'y' },
+                        { label: 'Likes', data: finalData.map(d => d.likes || 0), borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', fill: true, tension: 0.3, pointRadius: 4, yAxisID: 'y1' }
                     ]
                 },
                 options: {
@@ -462,8 +1298,967 @@
             });
         }
 
+        // --- TAB SYSTEM ---
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('active'); b.classList.add('text-slate-500'); b.classList.remove('text-slate-300'); });
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+            document.getElementById('tab_' + tab).classList.add('active');
+            document.getElementById('tab_' + tab).classList.remove('text-slate-500');
+            document.getElementById('tab_' + tab).classList.add('text-slate-300');
+            document.getElementById('content_' + tab).classList.add('active');
+
+            if (tab === 'comptes') { renderAccountStats(); renderViewsDistChart(); }
+            if (tab === 'tendances') { populateTrendAccountFilter(); renderTrendChart(); }
+            if (tab === 'creation') loadCreationStats();
+            if (tab === 'graphiques') renderAllGraphiques();
+        }
+
+        let creationData = [];
+        let currentCreationSort = { column: 'date', direction: 'desc' };
+
+        async function loadCreationStats() {
+            try {
+                const res = await fetch('/creation_logs.json?nocache=' + new Date().getTime());
+                creationData = await res.json();
+
+                // Calcul préalable du ratio pour le tri
+                creationData.forEach(item => {
+                    const p = item.processing_time_seconds || 0;
+                    const v = item.video_duration_seconds || 0;
+                    item.ratio = (p > 0 && v > 0) ? (v / p) : 0;
+                });
+
+                renderCreationTable();
+            } catch (e) {
+                console.error("Erreur chargement logs creation", e);
+                document.getElementById('creation_table_body').innerHTML = "<tr><td colspan='5' class='p-8 text-center text-red-500 italic'>Erreur chargement logs</td></tr>";
+            }
+        }
+
+        function sortCreationTable(column) {
+            if (currentCreationSort.column === column) {
+                currentCreationSort.direction = currentCreationSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentCreationSort.column = column;
+                currentCreationSort.direction = 'desc'; // Default desc for stats usually better
+            }
+            renderCreationTable();
+        }
+
+        function renderCreationTable() {
+            const tbody = document.getElementById('creation_table_body');
+            tbody.innerHTML = "";
+
+            // Mise à jour des icônes de tri
+            ['date', 'video_title', 'processing_time_seconds', 'video_duration_seconds', 'ratio'].forEach(col => {
+                const span = document.getElementById('sort_c_' + col);
+                if (span) {
+                    if (col === currentCreationSort.column) {
+                        span.innerText = currentCreationSort.direction === 'asc' ? '▲' : '▼';
+                        span.className = "text-blue-400 ml-1";
+                    } else { span.innerText = ''; }
+                }
+            });
+
+            // Tri
+            creationData.sort((a, b) => {
+                let valA = a[currentCreationSort.column];
+                let valB = b[currentCreationSort.column];
+
+                // Cas particuliers
+                if (currentCreationSort.column === 'date') {
+                    valA = new Date(valA); valB = new Date(valB);
+                }
+
+                if (valA < valB) return currentCreationSort.direction === 'asc' ? -1 : 1;
+                if (valA > valB) return currentCreationSort.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            creationData.forEach(item => {
+                const processingTime = item.processing_time_seconds || 0;
+                const videoDuration = item.video_duration_seconds || 0;
+
+                let ratioDisplay = "N/A";
+                let ratioClass = "text-slate-500";
+
+                if (videoDuration > 0 && processingTime > 0) {
+                    const ratio = videoDuration / processingTime;
+                    ratioDisplay = ratio.toFixed(2) + "x";
+
+                    if (ratio >= 1.0) ratioClass = "text-green-400 font-bold";
+                    else if (ratio >= 0.5) ratioClass = "text-yellow-400 font-bold";
+                    else ratioClass = "text-red-400 font-bold";
+                }
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-700/50 transition border-b border-slate-700/50";
+                tr.innerHTML = `
+                    <td class="p-4 text-xs text-slate-400 font-mono whitespace-nowrap">${item.date}</td>
+                    <td class="p-4 text-sm font-medium text-slate-200 truncate max-w-[200px]" title="${item.video_title || item.filename}">
+                        ${item.video_title || item.filename}
+                    </td>
+                    <td class="p-4 text-center font-bold text-blue-400 text-sm">${item.processing_time_human || processingTime + 's'}</td>
+                    <td class="p-4 text-center font-bold text-slate-300 text-sm">${videoDuration > 0 ? videoDuration + 's' : 'N/A'}</td>
+                    <td class="p-4 text-center ${ratioClass} text-sm">${ratioDisplay}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // --- ACCOUNT STATS ---
+        function renderAccountStats() {
+            const accountMap = {};
+
+            globalData.forEach(item => {
+                // Extraire le nom de compte depuis l'URL ou le champ account
+                let acc = item.account || 'N/A';
+                if (acc === 'N/A' && item.url) {
+                    const m = item.url.match(/@([^/]+)/);
+                    if (m) acc = m[1];
+                }
+
+                if (!accountMap[acc]) accountMap[acc] = { views: 0, likes: 0, videos: 0, ratios: [] };
+                accountMap[acc].views += item.views;
+                accountMap[acc].likes += item.likes;
+                accountMap[acc].videos += 1;
+                accountMap[acc].ratios.push(item.ratio);
+            });
+
+            // Global summary
+            let totalViews = 0, totalLikes = 0, totalVideos = 0, allRatios = [];
+            Object.values(accountMap).forEach(a => {
+                totalViews += a.views;
+                totalLikes += a.likes;
+                totalVideos += a.videos;
+                allRatios = allRatios.concat(a.ratios);
+            });
+            const avgGlobalRatio = allRatios.length > 0 ? (allRatios.reduce((s, v) => s + v, 0) / allRatios.length).toFixed(2) : '0';
+
+            const summaryEl = document.getElementById('global_summary');
+            summaryEl.innerHTML = `
+                <div class="global-stat-card">
+                    <div class="text-[10px] text-slate-400 uppercase font-bold mb-1">Total Vues</div>
+                    <div class="text-xl font-extrabold text-blue-400">${totalViews.toLocaleString()}</div>
+                </div>
+                <div class="global-stat-card">
+                    <div class="text-[10px] text-slate-400 uppercase font-bold mb-1">Total Likes</div>
+                    <div class="text-xl font-extrabold text-red-400">${totalLikes.toLocaleString()}</div>
+                </div>
+                <div class="global-stat-card">
+                    <div class="text-[10px] text-slate-400 uppercase font-bold mb-1">Ratio Moyen</div>
+                    <div class="text-xl font-extrabold text-yellow-400">${avgGlobalRatio}%</div>
+                </div>
+                <div class="global-stat-card">
+                    <div class="text-[10px] text-slate-400 uppercase font-bold mb-1">Vidéos</div>
+                    <div class="text-xl font-extrabold text-emerald-400">${totalVideos}</div>
+                </div>
+            `;
+
+            // Per-account cards sorted by views desc
+            const sortedAccounts = Object.entries(accountMap).sort((a, b) => b[1].views - a[1].views);
+            const gridEl = document.getElementById('accounts_grid');
+            gridEl.innerHTML = '';
+
+            const colors = [
+                { gradient: 'from-blue-500/20 to-indigo-600/10', accent: '#3b82f6', bar: 'linear-gradient(90deg, #3b82f6, #6366f1)' },
+                { gradient: 'from-pink-500/20 to-rose-600/10', accent: '#ec4899', bar: 'linear-gradient(90deg, #ec4899, #f43f5e)' },
+                { gradient: 'from-emerald-500/20 to-teal-600/10', accent: '#10b981', bar: 'linear-gradient(90deg, #10b981, #14b8a6)' },
+                { gradient: 'from-amber-500/20 to-orange-600/10', accent: '#f59e0b', bar: 'linear-gradient(90deg, #f59e0b, #f97316)' },
+                { gradient: 'from-violet-500/20 to-purple-600/10', accent: '#8b5cf6', bar: 'linear-gradient(90deg, #8b5cf6, #a855f7)' },
+            ];
+
+            sortedAccounts.forEach(([name, stats], i) => {
+                const c = colors[i % colors.length];
+                const avgRatio = stats.ratios.length > 0
+                    ? (stats.ratios.reduce((s, v) => s + v, 0) / stats.ratios.length).toFixed(2)
+                    : '0';
+                const ratioWidth = Math.min(parseFloat(avgRatio) * 5, 100); // Scale for visual (20% = full bar)
+
+                const card = document.createElement('div');
+                card.className = 'account-card';
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <div class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Compte</div>
+                            <div class="text-lg font-extrabold" style="color: ${c.accent}">@${name}</div>
+                        </div>
+                        <div class="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold" style="background: ${c.accent}20; color: ${c.accent}">
+                            🎬 ${stats.videos} vidéo${stats.videos > 1 ? 's' : ''}
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-3 mb-4">
+                        <div>
+                            <div class="text-[9px] text-slate-500 uppercase font-bold">Vues</div>
+                            <div class="stat-value text-lg">${stats.views.toLocaleString()}</div>
+                        </div>
+                        <div>
+                            <div class="text-[9px] text-slate-500 uppercase font-bold">Likes</div>
+                            <div class="stat-value text-lg" style="background: linear-gradient(135deg, #f87171, #ef4444); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">${stats.likes.toLocaleString()}</div>
+                        </div>
+                        <div>
+                            <div class="text-[9px] text-slate-500 uppercase font-bold">Ratio</div>
+                            <div class="stat-value text-lg" style="background: linear-gradient(135deg, #fbbf24, #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">${avgRatio}%</div>
+                        </div>
+                    </div>
+
+                    <div class="ratio-bar">
+                        <div class="ratio-bar-fill" style="width: ${ratioWidth}%; background: ${c.bar};"></div>
+                    </div>
+                    <div class="flex justify-between mt-1">
+                        <span class="text-[9px] text-slate-600">0%</span>
+                        <span class="text-[9px] text-slate-600">engagement</span>
+                        <span class="text-[9px] text-slate-600">20%+</span>
+                    </div>
+                `;
+                gridEl.appendChild(card);
+            });
+
+            if (sortedAccounts.length === 0) {
+                gridEl.innerHTML = '<div class="col-span-2 text-center text-slate-500 italic py-12">Aucune donnée de compte disponible</div>';
+            }
+        }
+
+        // --- TENDANCES ---
+        let trendChart = null;
+        let trendMode = 'hour'; // 'hour' ou 'day'
+
+        function setTrendMode(mode) {
+            trendMode = mode;
+            document.getElementById('trend_mode_hour').classList.toggle('active', mode === 'hour');
+            document.getElementById('trend_mode_day').classList.toggle('active', mode === 'day');
+            renderTrendChart();
+        }
+
+        function getAccountFromItem(item) {
+            let acc = item.account || 'N/A';
+            if (acc === 'N/A' && item.url) {
+                const m = item.url.match(/@([^/]+)/);
+                if (m) acc = m[1];
+            }
+            return acc;
+        }
+
+        function populateTrendAccountFilter() {
+            const sel = document.getElementById('trend_account_filter');
+            const currentVal = sel.value;
+            const accounts = new Set();
+            globalData.forEach(item => accounts.add(getAccountFromItem(item)));
+
+            sel.innerHTML = '<option value="__all__">🌐 Tous les comptes</option>';
+            [...accounts].sort().forEach(acc => {
+                const opt = document.createElement('option');
+                opt.value = acc;
+                opt.textContent = `@${acc}`;
+                sel.appendChild(opt);
+            });
+            sel.value = currentVal || '__all__';
+        }
+
+        function renderTrendChart() {
+            const filterAccount = document.getElementById('trend_account_filter').value;
+
+            // Filter data by account
+            let filtered = globalData;
+            if (filterAccount !== '__all__') {
+                filtered = globalData.filter(item => getAccountFromItem(item) === filterAccount);
+            }
+
+            // Group by hour or day
+            const buckets = {};
+            const countBuckets = {};
+            const likesBuckets = {};
+            const likesCount = {};
+
+            const joursFR = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+
+            filtered.forEach(item => {
+                const pubDate = item.pubDateObj;
+                if (!pubDate || pubDate.getTime() === 0) return;
+
+                let key;
+                if (trendMode === 'hour') {
+                    key = pubDate.getHours();
+                } else {
+                    key = pubDate.getDay(); // 0=Dim, 6=Sam
+                }
+
+                if (!buckets[key]) { buckets[key] = 0; countBuckets[key] = 0; likesBuckets[key] = 0; likesCount[key] = 0; }
+                buckets[key] += item.views;
+                likesBuckets[key] += item.likes;
+                countBuckets[key] += 1;
+                likesCount[key] += 1;
+            });
+
+            // Build labels and data
+            let labels = [];
+            let viewsData = [];
+            let likesData = [];
+            let countData = [];
+
+            if (trendMode === 'hour') {
+                for (let h = 0; h < 24; h++) {
+                    labels.push(h.toString().padStart(2, '0') + 'h');
+                    const avg = countBuckets[h] ? Math.round(buckets[h] / countBuckets[h]) : 0;
+                    const avgLikes = likesCount[h] ? Math.round(likesBuckets[h] / likesCount[h]) : 0;
+                    viewsData.push(avg);
+                    likesData.push(avgLikes);
+                    countData.push(countBuckets[h] || 0);
+                }
+            } else {
+                for (let d = 1; d <= 7; d++) {
+                    const dayIdx = d % 7; // Lundi=1 ... Dimanche=0
+                    labels.push(joursFR[dayIdx]);
+                    const avg = countBuckets[dayIdx] ? Math.round(buckets[dayIdx] / countBuckets[dayIdx]) : 0;
+                    const avgLikes = likesCount[dayIdx] ? Math.round(likesBuckets[dayIdx] / likesCount[dayIdx]) : 0;
+                    viewsData.push(avg);
+                    likesData.push(avgLikes);
+                    countData.push(countBuckets[dayIdx] || 0);
+                }
+            }
+
+            // Find best slot
+            let bestIdx = 0;
+            viewsData.forEach((v, i) => { if (v > viewsData[bestIdx]) bestIdx = i; });
+            let worstIdx = 0;
+            viewsData.forEach((v, i) => { if (v < viewsData[worstIdx] && countData[i] > 0) worstIdx = i; });
+
+            // Insights
+            const insightsEl = document.getElementById('trend_insights');
+            const totalVids = countData.reduce((s, v) => s + v, 0);
+            if (totalVids > 0) {
+                insightsEl.innerHTML = `
+                    <div class="insight-chip">🏆 Meilleur : <strong>${labels[bestIdx]}</strong> (${viewsData[bestIdx].toLocaleString()} vues moy.)</div>
+                    <div class="insight-chip" style="background: rgba(239,68,68,0.1); color: #f87171; border-color: rgba(239,68,68,0.2);">📉 Pire : <strong>${labels[worstIdx]}</strong> (${viewsData[worstIdx].toLocaleString()} vues moy.)</div>
+                    <div class="insight-chip" style="background: rgba(16,185,129,0.1); color: #34d399; border-color: rgba(16,185,129,0.2);">🎬 ${totalVids} vidéo${totalVids > 1 ? 's' : ''} analysée${totalVids > 1 ? 's' : ''}</div>
+                `;
+            } else {
+                insightsEl.innerHTML = '<div class="insight-chip">⚠️ Pas assez de données de date de pub.</div>';
+            }
+
+            // Bar colors: highlight best
+            const barColors = viewsData.map((v, i) => {
+                if (i === bestIdx && v > 0) return 'rgba(59, 130, 246, 0.9)';
+                if (v === 0) return 'rgba(51, 65, 85, 0.3)';
+                return 'rgba(99, 102, 241, 0.5)';
+            });
+            const barBorders = viewsData.map((v, i) => {
+                if (i === bestIdx && v > 0) return '#3b82f6';
+                return 'rgba(99, 102, 241, 0.3)';
+            });
+
+            // Render chart
+            if (trendChart) trendChart.destroy();
+
+            const ctx = document.getElementById('trendCanvas').getContext('2d');
+            trendChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Vues moy.',
+                            data: viewsData,
+                            backgroundColor: barColors,
+                            borderColor: barBorders,
+                            borderWidth: 1,
+                            borderRadius: 6,
+                            yAxisID: 'y',
+                            order: 2
+                        },
+                        {
+                            label: 'Likes moy.',
+                            data: likesData,
+                            type: 'line',
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 4,
+                            pointBackgroundColor: '#ef4444',
+                            pointBorderColor: '#1e293b',
+                            pointBorderWidth: 2,
+                            yAxisID: 'y1',
+                            order: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { labels: { color: '#94a3b8', font: { size: 11, weight: 'bold' } } },
+                        tooltip: {
+                            backgroundColor: '#1e293b',
+                            borderColor: '#334155',
+                            borderWidth: 1,
+                            titleColor: '#e2e8f0',
+                            bodyColor: '#94a3b8',
+                            padding: 12,
+                            callbacks: {
+                                afterBody: function (context) {
+                                    const idx = context[0].dataIndex;
+                                    return `📊 ${countData[idx]} vidéo(s) postée(s)`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            position: 'left',
+                            grid: { color: 'rgba(51,65,85,0.4)' },
+                            ticks: { color: '#3b82f6', font: { size: 10, weight: 'bold' } },
+                            title: { display: true, text: 'Vues moyennes', color: '#3b82f6', font: { size: 10 } }
+                        },
+                        y1: {
+                            beginAtZero: true,
+                            position: 'right',
+                            grid: { drawOnChartArea: false },
+                            ticks: { color: '#ef4444', font: { size: 10, weight: 'bold' } },
+                            title: { display: true, text: 'Likes moyens', color: '#ef4444', font: { size: 10 } }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#64748b', font: { size: trendMode === 'hour' ? 9 : 11, weight: '600' } }
+                        }
+                    }
+                }
+            });
+        }
+
+        // --- EXPORT IA ---
+        function exportForAI() {
+            if (!globalData || globalData.length === 0) {
+                alert('⚠️ Aucune donnée à exporter. Attendez le chargement.');
+                return;
+            }
+
+            const joursFR = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+            const now = new Date();
+
+            // 1. Stats par compte
+            const accountMap = {};
+            globalData.forEach(item => {
+                let acc = getAccountFromItem(item);
+                if (!accountMap[acc]) accountMap[acc] = { total_vues: 0, total_likes: 0, nb_videos: 0, ratios: [], videos: [] };
+                accountMap[acc].total_vues += item.views;
+                accountMap[acc].total_likes += item.likes;
+                accountMap[acc].nb_videos += 1;
+                accountMap[acc].ratios.push(item.ratio);
+                accountMap[acc].videos.push(item.title);
+            });
+
+            let totalViews = 0, totalLikes = 0;
+            Object.values(accountMap).forEach(a => { totalViews += a.total_vues; totalLikes += a.total_likes; });
+
+            // 2. Stats par compte (clean)
+            const comptes = {};
+            Object.entries(accountMap).sort((a, b) => b[1].total_vues - a[1].total_vues).forEach(([name, stats]) => {
+                const avgRatio = stats.ratios.length > 0 ? parseFloat((stats.ratios.reduce((s, v) => s + v, 0) / stats.ratios.length).toFixed(2)) : 0;
+                comptes[name] = {
+                    nb_videos: stats.nb_videos,
+                    total_vues: stats.total_vues,
+                    total_likes: stats.total_likes,
+                    ratio_moyen: avgRatio,
+                    titres_videos: stats.videos
+                };
+            });
+
+            // 3. Vidéos avec historique d'évolution
+            const videos = [...globalData].sort((a, b) => b.views - a.views).map(item => {
+                // Calculer l'évolution depuis l'historique
+                let evolution = null;
+                if (item.history && item.history.length >= 2) {
+                    const first = item.history[0];
+                    const last = item.history[item.history.length - 1];
+                    const vuesDiff = (last.views || 0) - (first.views || 0);
+                    const likesDiff = (last.likes || 0) - (first.likes || 0);
+                    const firstDate = first.last_updated || null;
+                    const lastDate = last.last_updated || null;
+
+                    evolution = {
+                        premiere_mesure: firstDate,
+                        derniere_mesure: lastDate,
+                        nb_mesures: item.history.length,
+                        vues_gagnees: vuesDiff,
+                        likes_gagnes: likesDiff,
+                        historique: item.history.map(h => ({
+                            date: h.last_updated || null,
+                            vues: h.views || 0,
+                            likes: h.likes || 0
+                        }))
+                    };
+                }
+
+                return {
+                    compte: item.account,
+                    titre: item.title,
+                    url: item.url,
+                    vues: item.views,
+                    likes: item.likes,
+                    ratio_engagement: item.ratio,
+                    date_publication: item.pubDateObj && item.pubDateObj.getTime() > 0
+                        ? item.pubDateObj.toISOString()
+                        : null,
+                    jour_publication: item.pubDateObj && item.pubDateObj.getTime() > 0
+                        ? joursFR[item.pubDateObj.getDay()]
+                        : null,
+                    heure_publication: item.pubDateObj && item.pubDateObj.getTime() > 0
+                        ? item.pubDateObj.getHours()
+                        : null,
+                    tendance: item.trend ? item.trend.icon : null,
+                    evolution: evolution
+                };
+            });
+
+            // 4. Tendances par heure
+            const tendances_par_heure = {};
+            const hourBuckets = {}, hourCounts = {}, hourLikes = {};
+            globalData.forEach(item => {
+                if (!item.pubDateObj || item.pubDateObj.getTime() === 0) return;
+                const h = item.pubDateObj.getHours();
+                if (!hourBuckets[h]) { hourBuckets[h] = 0; hourCounts[h] = 0; hourLikes[h] = 0; }
+                hourBuckets[h] += item.views;
+                hourLikes[h] += item.likes;
+                hourCounts[h] += 1;
+            });
+            for (let h = 0; h < 24; h++) {
+                if (hourCounts[h]) {
+                    tendances_par_heure[h + 'h'] = {
+                        vues_moyennes: Math.round(hourBuckets[h] / hourCounts[h]),
+                        likes_moyens: Math.round(hourLikes[h] / hourCounts[h]),
+                        nb_videos: hourCounts[h]
+                    };
+                }
+            }
+
+            // 5. Tendances par jour
+            const tendances_par_jour = {};
+            const dayBuckets = {}, dayCounts = {}, dayLikes = {};
+            globalData.forEach(item => {
+                if (!item.pubDateObj || item.pubDateObj.getTime() === 0) return;
+                const d = item.pubDateObj.getDay();
+                if (!dayBuckets[d]) { dayBuckets[d] = 0; dayCounts[d] = 0; dayLikes[d] = 0; }
+                dayBuckets[d] += item.views;
+                dayLikes[d] += item.likes;
+                dayCounts[d] += 1;
+            });
+            for (let d = 1; d <= 7; d++) {
+                const dayIdx = d % 7;
+                if (dayCounts[dayIdx]) {
+                    tendances_par_jour[joursFR[dayIdx]] = {
+                        vues_moyennes: Math.round(dayBuckets[dayIdx] / dayCounts[dayIdx]),
+                        likes_moyens: Math.round(dayLikes[dayIdx] / dayCounts[dayIdx]),
+                        nb_videos: dayCounts[dayIdx]
+                    };
+                }
+            }
+
+            // 6. Build final JSON
+            const exportData = {
+                meta: {
+                    export_date: now.toISOString(),
+                    plateforme: "TikTok",
+                    prompt_ia: "Analyse ces données TikTok et donne-moi : 1) Les meilleurs créneaux pour publier (heure et jour), 2) Quelles vidéos performent le mieux et pourquoi, 3) Des recommandations concrètes pour améliorer l'engagement, 4) Les tendances de croissance par compte."
+                },
+                resume_global: {
+                    nb_comptes: Object.keys(comptes).length,
+                    nb_videos: globalData.length,
+                    total_vues: totalViews,
+                    total_likes: totalLikes,
+                    ratio_moyen_global: totalViews > 0 ? parseFloat(((totalLikes / totalViews) * 100).toFixed(2)) : 0
+                },
+                comptes: comptes,
+                tendances_par_heure: tendances_par_heure,
+                tendances_par_jour: tendances_par_jour,
+                videos: videos
+            };
+
+            // Télécharger le fichier JSON
+            const jsonStr = JSON.stringify(exportData, null, 2);
+            const blob = new Blob([jsonStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `tiktok_analytics_${now.toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            // Feedback visuel
+            const btn = event.target.closest('button');
+            const original = btn.innerHTML;
+            btn.innerHTML = '✅ TÉLÉCHARGÉ !';
+            btn.classList.replace('bg-purple-600', 'bg-green-600');
+            setTimeout(() => {
+                btn.innerHTML = original;
+                btn.classList.replace('bg-green-600', 'bg-purple-600');
+            }, 2000);
+        }
+
         loadStats();
         setInterval(loadStats, 30000);
     </script>
 </body>
+
+<script>
+        const gChartInstances = {};
+        const GC = [
+            '#3b82f6','#ec4899','#10b981','#f59e0b','#8b5cf6',
+            '#f43f5e','#06b6d4','#84cc16','#e879f9','#fb923c',
+            '#14b8a6','#a78bfa','#facc15','#64748b'
+        ];
+        const gTooltipStyle = {
+            backgroundColor: '#1e293b', borderColor: '#334155', borderWidth: 1,
+            titleColor: '#e2e8f0', bodyColor: '#94a3b8', padding: 12
+        };
+        const gGridStyle = { color: 'rgba(51,65,85,0.4)' };
+
+        function destroyG(id) { if (gChartInstances[id]) { gChartInstances[id].destroy(); delete gChartInstances[id]; } }
+
+        function getAccountStats() {
+            const m = {};
+            globalData.forEach(item => {
+                const acc = item.account || 'N/A';
+                if (!m[acc]) m[acc] = { views: 0, likes: 0, videos: 0, ratios: [] };
+                m[acc].views += item.views;
+                m[acc].likes += item.likes;
+                m[acc].videos += 1;
+                m[acc].ratios.push(item.ratio);
+            });
+            return Object.entries(m).sort((a, b) => b[1].views - a[1].views);
+        }
+
+        function renderAllGraphiques() {
+            if (!globalData || globalData.length === 0) return;
+
+            const accounts = getAccountStats();
+            const accNames = accounts.map(a => '@' + a[0]);
+            const accViews = accounts.map(a => a[1].views);
+            const accLikes = accounts.map(a => a[1].likes);
+            const accRatios = accounts.map(a => a[1].ratios.length > 0 ? parseFloat((a[1].ratios.reduce((s,v) => s+v, 0) / a[1].ratios.length).toFixed(2)) : 0);
+            const accVideos = accounts.map(a => a[1].videos);
+
+            // 1. Bar horizontal - Vues par compte
+            destroyG('gChart1');
+            gChartInstances['gChart1'] = new Chart(document.getElementById('gChart1').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: accNames,
+                    datasets: [{
+                        label: 'Vues totales',
+                        data: accViews,
+                        backgroundColor: GC.slice(0, accNames.length).map(c => c + 'cc'),
+                        borderColor: GC.slice(0, accNames.length),
+                        borderWidth: 1,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: gTooltipStyle },
+                    scales: {
+                        x: { grid: gGridStyle, ticks: { color: '#94a3b8', font: { size: 10 } } },
+                        y: { grid: { display: false }, ticks: { color: '#e2e8f0', font: { size: 11, weight: 'bold' } } }
+                    }
+                }
+            });
+
+            // 2. Doughnut - Likes
+            destroyG('gChart2');
+            gChartInstances['gChart2'] = new Chart(document.getElementById('gChart2').getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: accNames,
+                    datasets: [{ data: accLikes, backgroundColor: GC.slice(0, accNames.length), borderColor: '#0f172a', borderWidth: 2, hoverOffset: 8 }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, cutout: '50%',
+                    plugins: {
+                        legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 11, weight: '600' }, padding: 12, usePointStyle: true, pointStyleWidth: 10 } },
+                        tooltip: { ...gTooltipStyle, callbacks: { label: ctx => ` ${ctx.parsed.toLocaleString()} likes` } }
+                    }
+                }
+            });
+
+            // 3. Radar
+            destroyG('gChart3');
+            const maxViews = Math.max(...accViews, 1);
+            const maxLikes = Math.max(...accLikes, 1);
+            const maxVids = Math.max(...accVideos, 1);
+            const maxRatio = Math.max(...accRatios, 1);
+            const radarDatasets = accounts.slice(0, 6).map(([name, stats], i) => {
+                const avgR = stats.ratios.length > 0 ? (stats.ratios.reduce((s,v)=>s+v,0)/stats.ratios.length) : 0;
+                return {
+                    label: '@' + name,
+                    data: [
+                        (stats.views / maxViews * 100).toFixed(1),
+                        (stats.likes / maxLikes * 100).toFixed(1),
+                        (avgR / maxRatio * 100).toFixed(1),
+                        (stats.videos / maxVids * 100).toFixed(1)
+                    ],
+                    borderColor: GC[i],
+                    backgroundColor: GC[i] + '22',
+                    borderWidth: 2,
+                    pointBackgroundColor: GC[i],
+                    pointRadius: 4
+                };
+            });
+            gChartInstances['gChart3'] = new Chart(document.getElementById('gChart3').getContext('2d'), {
+                type: 'radar',
+                data: {
+                    labels: ['Vues', 'Likes', 'Ratio Engagement', 'Nb Vidéos'],
+                    datasets: radarDatasets
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            angleLines: { color: 'rgba(51,65,85,0.3)' },
+                            grid: { color: 'rgba(51,65,85,0.3)' },
+                            pointLabels: { color: '#94a3b8', font: { size: 11, weight: 'bold' } },
+                            ticks: { display: false },
+                            suggestedMin: 0, suggestedMax: 100
+                        }
+                    },
+                    plugins: {
+                        legend: { labels: { color: '#94a3b8', font: { size: 10, weight: '600' }, usePointStyle: true } },
+                        tooltip: gTooltipStyle
+                    }
+                }
+            });
+
+            // 4. Stacked Bar - Vues vs Likes
+            destroyG('gChart4');
+            gChartInstances['gChart4'] = new Chart(document.getElementById('gChart4').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: accNames,
+                    datasets: [
+                        { label: 'Vues', data: accViews, backgroundColor: 'rgba(59,130,246,0.7)', borderColor: '#3b82f6', borderWidth: 1, borderRadius: 4 },
+                        { label: 'Likes', data: accLikes, backgroundColor: 'rgba(239,68,68,0.7)', borderColor: '#ef4444', borderWidth: 1, borderRadius: 4 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: '#94a3b8', font: { size: 11, weight: '600' } } },
+                        tooltip: gTooltipStyle
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10, weight: '600' } } },
+                        y: { grid: gGridStyle, ticks: { color: '#64748b', font: { size: 10 } } }
+                    }
+                }
+            });
+
+            // 5. Scatter - Vues vs Likes
+            destroyG('gChart5');
+            const scatterData = globalData.map((item, i) => ({
+                x: item.views, y: item.likes,
+                label: item.title
+            }));
+            const scatterColors = globalData.map(item => {
+                const accIdx = accounts.findIndex(a => a[0] === (item.account || 'N/A'));
+                return GC[accIdx >= 0 ? accIdx % GC.length : 0];
+            });
+            gChartInstances['gChart5'] = new Chart(document.getElementById('gChart5').getContext('2d'), {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Vidéos',
+                        data: scatterData,
+                        backgroundColor: scatterColors.map(c => c + '99'),
+                        borderColor: scatterColors,
+                        borderWidth: 1,
+                        pointRadius: 6,
+                        pointHoverRadius: 9
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            ...gTooltipStyle,
+                            callbacks: {
+                                title: ctx => ctx[0].raw.label || '',
+                                label: ctx => `Vues: ${ctx.raw.x.toLocaleString()} | Likes: ${ctx.raw.y.toLocaleString()}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { title: { display: true, text: 'Vues', color: '#3b82f6', font: { size: 11 } }, grid: gGridStyle, ticks: { color: '#3b82f6', font: { size: 10 } } },
+                        y: { title: { display: true, text: 'Likes', color: '#ef4444', font: { size: 11 } }, grid: gGridStyle, ticks: { color: '#ef4444', font: { size: 10 } } }
+                    }
+                }
+            });
+
+            // 6. Polar Area - Engagement
+            destroyG('gChart6');
+            gChartInstances['gChart6'] = new Chart(document.getElementById('gChart6').getContext('2d'), {
+                type: 'polarArea',
+                data: {
+                    labels: accNames,
+                    datasets: [{
+                        data: accRatios,
+                        backgroundColor: GC.slice(0, accNames.length).map(c => c + '88'),
+                        borderColor: GC.slice(0, accNames.length),
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            grid: { color: 'rgba(51,65,85,0.3)' },
+                            ticks: { color: '#64748b', font: { size: 9 }, backdropColor: 'transparent' }
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 10, weight: '600' }, usePointStyle: true, padding: 10 } },
+                        tooltip: { ...gTooltipStyle, callbacks: { label: ctx => ` ${ctx.parsed.r.toFixed(2)}% engagement` } }
+                    }
+                }
+            });
+
+            // 7. Top 10 vidéos
+            destroyG('gChart7');
+            const top10 = [...globalData].sort((a, b) => b.views - a.views).slice(0, 10);
+            const top10Colors = top10.map(item => {
+                const accIdx = accounts.findIndex(a => a[0] === (item.account || 'N/A'));
+                return GC[accIdx >= 0 ? accIdx % GC.length : 0];
+            });
+            gChartInstances['gChart7'] = new Chart(document.getElementById('gChart7').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: top10.map(v => v.title.length > 30 ? v.title.substring(0, 30) + '…' : v.title),
+                    datasets: [
+                        {
+                            label: 'Vues',
+                            data: top10.map(v => v.views),
+                            backgroundColor: top10Colors.map(c => c + 'aa'),
+                            borderColor: top10Colors,
+                            borderWidth: 1,
+                            borderRadius: 6,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Likes',
+                            data: top10.map(v => v.likes),
+                            type: 'line',
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239,68,68,0.1)',
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 5,
+                            pointBackgroundColor: '#ef4444',
+                            pointBorderColor: '#1e293b',
+                            pointBorderWidth: 2,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: '#94a3b8', font: { size: 11, weight: '600' } } },
+                        tooltip: {
+                            ...gTooltipStyle,
+                            callbacks: {
+                                afterBody: ctx => {
+                                    const idx = ctx[0].dataIndex;
+                                    return `@${top10[idx].account}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 9 }, maxRotation: 25 } },
+                        y: { position: 'left', grid: gGridStyle, ticks: { color: '#3b82f6', font: { size: 10 } }, title: { display: true, text: 'Vues', color: '#3b82f6', font: { size: 10 } } },
+                        y1: { position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#ef4444', font: { size: 10 } }, title: { display: true, text: 'Likes', color: '#ef4444', font: { size: 10 } } }
+                    }
+                }
+            });
+
+            // 8. Nb vidéos par jour
+            destroyG('gChart8');
+            const joursFR = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+            const dayCount = new Array(7).fill(0);
+            const dayViews = new Array(7).fill(0);
+            globalData.forEach(item => {
+                if (item.pubDateObj && item.pubDateObj.getTime() > 0) {
+                    const d = item.pubDateObj.getDay();
+                    dayCount[d]++;
+                    dayViews[d] += item.views;
+                }
+            });
+            const dayLabels = [1,2,3,4,5,6,0].map(d => joursFR[d]);
+            const dayCountOrdered = [1,2,3,4,5,6,0].map(d => dayCount[d]);
+            const dayViewsOrdered = [1,2,3,4,5,6,0].map(d => dayCount[d] > 0 ? Math.round(dayViews[d] / dayCount[d]) : 0);
+            gChartInstances['gChart8'] = new Chart(document.getElementById('gChart8').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: dayLabels,
+                    datasets: [
+                        { label: 'Nb vidéos', data: dayCountOrdered, backgroundColor: 'rgba(99,102,241,0.6)', borderColor: '#6366f1', borderWidth: 1, borderRadius: 6, yAxisID: 'y' },
+                        { label: 'Vues moy.', data: dayViewsOrdered, type: 'line', borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.08)', fill: true, tension: 0.4, pointRadius: 4, pointBackgroundColor: '#10b981', yAxisID: 'y1' }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#94a3b8', font: { size: 10, weight: '600' } } }, tooltip: gTooltipStyle },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10, weight: '600' } } },
+                        y: { position: 'left', grid: gGridStyle, ticks: { color: '#6366f1', font: { size: 10 } }, title: { display: true, text: 'Nb vidéos', color: '#6366f1', font: { size: 10 } } },
+                        y1: { position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#10b981', font: { size: 10 } }, title: { display: true, text: 'Vues moy.', color: '#10b981', font: { size: 10 } } }
+                    }
+                }
+            });
+
+            // 9. Vues moyennes par heure
+            destroyG('gChart9');
+            const hourCount = new Array(24).fill(0);
+            const hourViews = new Array(24).fill(0);
+            const hourLikes = new Array(24).fill(0);
+            globalData.forEach(item => {
+                if (item.pubDateObj && item.pubDateObj.getTime() > 0) {
+                    const h = item.pubDateObj.getHours();
+                    hourCount[h]++;
+                    hourViews[h] += item.views;
+                    hourLikes[h] += item.likes;
+                }
+            });
+            const hourLabels = Array.from({length:24}, (_, h) => h.toString().padStart(2,'0') + 'h');
+            const hourAvgViews = hourLabels.map((_, h) => hourCount[h] > 0 ? Math.round(hourViews[h] / hourCount[h]) : 0);
+            const hourAvgLikes = hourLabels.map((_, h) => hourCount[h] > 0 ? Math.round(hourLikes[h] / hourCount[h]) : 0);
+            const bestHour = hourAvgViews.indexOf(Math.max(...hourAvgViews));
+            const hourBarColors = hourAvgViews.map((v, i) => i === bestHour && v > 0 ? 'rgba(59,130,246,0.9)' : (v === 0 ? 'rgba(51,65,85,0.3)' : 'rgba(99,102,241,0.5)'));
+            gChartInstances['gChart9'] = new Chart(document.getElementById('gChart9').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: hourLabels,
+                    datasets: [
+                        { label: 'Vues moy.', data: hourAvgViews, backgroundColor: hourBarColors, borderColor: hourBarColors.map(c => c.replace('0.9','1').replace('0.5','0.8').replace('0.3','0.5')), borderWidth: 1, borderRadius: 4, yAxisID: 'y' },
+                        { label: 'Likes moy.', data: hourAvgLikes, type: 'line', borderColor: '#ec4899', backgroundColor: 'rgba(236,72,153,0.06)', fill: true, tension: 0.4, pointRadius: 3, pointBackgroundColor: '#ec4899', yAxisID: 'y1' }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { labels: { color: '#94a3b8', font: { size: 10, weight: '600' } } }, tooltip: gTooltipStyle },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 8 } } },
+                        y: { position: 'left', grid: gGridStyle, ticks: { color: '#3b82f6', font: { size: 10 } } },
+                        y1: { position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#ec4899', font: { size: 10 } } }
+                    }
+                }
+            });
+        }
+    </script>
 </html>
