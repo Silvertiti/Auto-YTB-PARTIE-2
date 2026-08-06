@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clipo — Créer des vidéos</title>
+    <meta name="description" content="Générez automatiquement des vidéos TikTok à partir de clips Twitch. Entrez votre licence et lancez la création.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --bg:     #06080f;
+            --bg2:    #0d1117;
+            --card:   #0f1724;
+            --border: rgba(99,102,241,.2);
+            --accent: #6366f1;
+            --accent2:#8b5cf6;
+            --text:   #e2e8f0;
+            --muted:  #64748b;
+            --green:  #10b981;
+            --red:    #ef4444;
+        }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .bg-glow {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none; z-index: 0;
+            background:
+                radial-gradient(ellipse 80% 60% at 50% -10%, rgba(99,102,241,.12) 0%, transparent 70%),
+                radial-gradient(ellipse 50% 40% at 80% 80%, rgba(139,92,246,.07) 0%, transparent 70%);
+        }
+
+        /* --- HEADER --- */
+        header {
+            position: sticky; top: 0; z-index: 50;
+            background: rgba(6,8,15,.9);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(99,102,241,.12);
+            padding: 0 24px;
+            height: 64px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .logo {
+            font-size: 18px; font-weight: 900; color: white;
+            display: flex; align-items: center; gap: 8px;
+            text-decoration: none;
+        }
+        .logo span { background: linear-gradient(135deg,#6366f1,#a78bfa); background-clip: text; -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+        .nav-links { display: flex; gap: 8px; }
+        .nav-link {
+            font-size: 12px; font-weight: 700; text-transform: uppercase;
+            padding: 6px 14px; border-radius: 8px;
+            text-decoration: none; transition: all .2s;
+        }
+        .nav-link-config { color: var(--muted); border: 1px solid rgba(99,102,241,.15); }
+        .nav-link-config:hover { color: #a78bfa; background: rgba(99,102,241,.08); }
+        .nav-link-active { background: rgba(99,102,241,.15); color: #a78bfa; border: 1px solid rgba(99,102,241,.3); }
+
+        /* --- HERO --- */
+        .hero {
+            position: relative; z-index: 1;
+            text-align: center; padding: 60px 24px 40px;
+        }
+        .hero-tag {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+            padding: 5px 14px; border-radius: 40px;
+            background: rgba(16,185,129,.1); color: #34d399;
+            border: 1px solid rgba(16,185,129,.2);
+            margin-bottom: 24px;
+        }
+        .hero h1 {
+            font-size: clamp(26px, 5vw, 44px); font-weight: 900;
+            line-height: 1.1; color: white; margin-bottom: 12px;
+        }
+        .hero h1 em {
+            font-style: normal;
+            background: linear-gradient(135deg,#10b981,#34d399,#6ee7b7);
+            background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .hero p { font-size: 15px; color: var(--muted); max-width: 480px; margin: 0 auto; line-height: 1.7; }
+
+        /* --- CONTAINER --- */
+        .container { max-width: 720px; margin: 0 auto; padding: 0 20px 80px; position: relative; z-index: 1; }
+
+        /* --- CARDS --- */
+        .card {
+            background: var(--card);
+            border: 1px solid rgba(99,102,241,.15);
+            border-radius: 20px;
+            padding: 28px;
+            position: relative; z-index: 1;
+            transition: border-color .3s, box-shadow .3s;
+            margin-bottom: 20px;
+        }
+        .card:hover { border-color: rgba(99,102,241,.3); box-shadow: 0 0 40px rgba(99,102,241,.06); }
+        .card-title {
+            font-size: 13px; font-weight: 800; text-transform: uppercase;
+            letter-spacing: .5px; color: var(--muted); margin-bottom: 20px;
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        /* --- FORM --- */
+        .field-label {
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+            color: var(--muted); display: block; margin-bottom: 7px;
+        }
+        .input {
+            width: 100%; background: rgba(255,255,255,.04); border: 1px solid rgba(99,102,241,.2);
+            border-radius: 10px; padding: 11px 14px; font-size: 14px; color: var(--text);
+            font-family: inherit; outline: none;
+            transition: border-color .2s, box-shadow .2s;
+        }
+        .input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(99,102,241,.15); }
+        .input::placeholder { color: #475569; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        @media (max-width: 640px) { .grid-2 { grid-template-columns: 1fr; } }
+
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+            padding: 12px 24px; border-radius: 10px; font-size: 14px; font-weight: 700;
+            cursor: pointer; border: none; font-family: inherit; transition: all .2s;
+        }
+        .btn-main {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white; width: 100%;
+        }
+        .btn-main:hover { opacity: .9; transform: translateY(-1px); box-shadow: 0 8px 32px rgba(16,185,129,.3); }
+        .btn-main:active { transform: translateY(0); }
+        .btn-main:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+
+        .btn-check {
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            color: white; width: 100%;
+        }
+        .btn-check:hover { opacity: .9; transform: translateY(-1px); }
+
+        /* --- LICENSE STATUS --- */
+        .license-status {
+            display: none; margin-top: 14px;
+            padding: 14px 18px; border-radius: 12px;
+            font-size: 13px; font-weight: 600;
+        }
+        .license-status.valid {
+            display: block;
+            background: rgba(16,185,129,.08); border: 1px solid rgba(16,185,129,.2); color: #34d399;
+        }
+        .license-status.invalid {
+            display: block;
+            background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.2); color: #f87171;
+        }
+        .license-details {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px;
+        }
+        @media (max-width: 500px) { .license-details { grid-template-columns: 1fr; } }
+        .license-detail-item {
+            background: rgba(255,255,255,.03); border: 1px solid rgba(99,102,241,.08);
+            border-radius: 10px; padding: 10px 14px; text-align: center;
+        }
+        .license-detail-label { font-size: 9px; font-weight: 700; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
+        .license-detail-value { font-size: 16px; font-weight: 800; color: white; }
+
+        /* --- GENERATE SECTION --- */
+        #generate_section { display: none; }
+        #generate_section.visible { display: block; }
+
+        /* --- QUEUE --- */
+        .queue-card {
+            background: rgba(99,102,241,.06); border: 1px solid rgba(99,102,241,.15);
+            border-radius: 14px; padding: 18px; margin-top: 16px;
+            display: none;
+        }
+        .queue-card.visible { display: block; }
+        .queue-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+        .queue-info { font-size: 13px; color: var(--muted); line-height: 1.9; }
+
+        /* --- RESULT --- */
+        .result-card {
+            display: none; margin-top: 14px;
+            background: rgba(16,185,129,.08); border: 1px solid rgba(16,185,129,.2);
+            border-radius: 12px; padding: 14px 18px;
+            font-size: 13px; color: #34d399; font-weight: 600;
+        }
+        .result-card.visible { display: block; }
+
+        /* --- ERROR --- */
+        .error-msg {
+            background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.2);
+            border-radius: 10px; padding: 12px 16px;
+            color: #f87171; font-size: 13px; font-weight: 600; margin-top: 10px;
+            display: none;
+        }
+        .error-msg.visible { display: block; }
+
+        /* --- TOAST --- */
+        #toast {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(80px);
+            z-index: 9999; padding: 10px 20px; border-radius: 10px;
+            font-size: 13px; font-weight: 700; font-family: inherit;
+            transition: transform .3s, opacity .3s; opacity: 0; white-space: nowrap;
+        }
+        #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+        #toast.success { background: rgba(16,185,129,.2); color: #34d399; border: 1px solid rgba(16,185,129,.3); }
+        #toast.error   { background: rgba(239,68,68,.2);  color: #f87171; border: 1px solid rgba(239,68,68,.3); }
+
+        /* --- SPINNER --- */
+        .spinner {
+            display: inline-block; width: 16px; height: 16px;
+            border: 2px solid rgba(255,255,255,.2); border-top-color: white;
+            border-radius: 50%; animation: spin .6s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* --- DIVIDER --- */
+        .divider { height: 1px; background: rgba(99,102,241,.1); margin: 24px 0; }
+    </style>
+</head>
+<body>
+    <div class="bg-glow"></div>
+    <div id="toast"></div>
+
+    <!-- HEADER -->
+    <header>
+        <a href="/" class="logo">⚡ <span>Clipo</span></a>
+        <div class="nav-links">
+            <a href="/client" class="nav-link nav-link-config">⚙️ Config</a>
+            <a href="/client/generate" class="nav-link nav-link-active">🎬 Générer</a>
+        </div>
+    </header>
+
+    <!-- HERO -->
+    <div class="hero">
+        <div class="hero-tag">🚀 Création automatique</div>
+        <h1>Crée tes <em>vidéos</em></h1>
+        <p>Entre ta licence, choisis un streamer et lance la création. Tes vidéos arrivent directement sur Telegram.</p>
+    </div>
+
+    <div class="container">
+
+        <!-- LICENCE -->
+        <div class="card">
+            <div class="card-title">🔑 Ta licence</div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap">
+                <div style="flex:1; min-width:220px">
+                    <input id="license_key" type="text" class="input" placeholder="CLI-XXXXXXXXXXXXXXXX"
+                        oninput="this.value=this.value.toUpperCase()"
+                        onkeydown="if(event.key==='Enter') checkLicense()">
+                </div>
+                <div style="display:flex; align-items:flex-end;">
+                    <button class="btn btn-check" onclick="checkLicense()" id="check_btn" style="width:140px">
+                        Vérifier
+                    </button>
+                </div>
+            </div>
+            <div id="license_status" class="license-status"></div>
+            <div id="license_details" class="license-details" style="display:none">
+                <div class="license-detail-item">
+                    <div class="license-detail-label">Plan</div>
+                    <div class="license-detail-value" id="r_plan">—</div>
+                </div>
+                <div class="license-detail-item">
+                    <div class="license-detail-label">Quota restant</div>
+                    <div class="license-detail-value" id="r_quota">—</div>
+                </div>
+                <div class="license-detail-item">
+                    <div class="license-detail-label">Expire dans</div>
+                    <div class="license-detail-value" id="r_days">—</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- GENERATION (visible après vérification) -->
+        <div id="generate_section">
+            <div class="card">
+                <div class="card-title">🎬 Paramètres de la vidéo</div>
+
+                <div style="margin-bottom:14px">
+                    <label class="field-label">Streamer / Mot-clé</label>
+                    <input id="v_query" type="text" class="input" placeholder="Ex: anyme023, Gotaga, Squeezie...">
+                </div>
+
+                <div class="grid-2" style="margin-bottom:14px">
+                    <div>
+                        <label class="field-label">Type de recherche</label>
+                        <select id="v_type" class="input" style="cursor:pointer">
+                            <option value="channel">📺 Chaîne Twitch</option>
+                            <option value="game">🎮 Jeu / Catégorie</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="field-label">Période</label>
+                        <select id="v_period" class="input" style="cursor:pointer">
+                            <option value="24h">⏰ Dernières 24h</option>
+                            <option value="7d">📅 7 jours</option>
+                            <option value="30d">📆 30 jours</option>
+                            <option value="all">♾️ Tout</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid-2" style="margin-bottom:20px">
+                    <div>
+                        <label class="field-label">Nombre de vidéos</label>
+                        <select id="v_nb" class="input" style="cursor:pointer">
+                            <option value="1">1 vidéo</option>
+                            <option value="2">2 vidéos</option>
+                            <option value="3">3 vidéos</option>
+                            <option value="5">5 vidéos</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="field-label">Langue</label>
+                        <select id="v_lang" class="input" style="cursor:pointer">
+                            <option value="fr">🇫🇷 Français</option>
+                            <option value="en">🇬🇧 English</option>
+                            <option value="es">🇪🇸 Español</option>
+                        </select>
+                    </div>
+                <div style="margin-bottom:20px">
+                    <label style="display:flex; align-items:center; gap:8px; font-size:13px; color:var(--muted); cursor:pointer">
+                        <input type="checkbox" id="v_ignore" style="width:16px; height:16px; accent-color:var(--accent)">
+                        📜 Ignorer l'historique (autoriser les doublons)
+                    </label>
+                </div>
+
+                <button class="btn btn-main" onclick="createVideo()" id="v_btn">
+                    🚀 Lancer la création
+                </button>
+
+                <div id="v_error" class="error-msg"></div>
+                <div id="v_result" class="result-card"></div>
+
+                <!-- Queue -->
+                <div id="queue_card" class="queue-card">
+                    <div class="queue-header">
+                        <span class="spinner"></span>
+                        <span style="font-size:13px; font-weight:700; color:var(--accent)">File d'attente — Suivi en temps réel</span>
+                    </div>
+                    <div id="queue_info" class="queue-info"></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const SERVER = 'http://51.91.56.161:5000';
+        let licenseData = null;
+
+        async function checkLicense() {
+            const key = document.getElementById('license_key').value.trim();
+            if (!key) return;
+
+            const btn = document.getElementById('check_btn');
+            btn.innerHTML = '<span class="spinner"></span>';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch(SERVER + '/license/check', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key })
+                });
+                const data = await res.json();
+                const statusEl = document.getElementById('license_status');
+                const detailsEl = document.getElementById('license_details');
+
+                if (data.valid) {
+                    licenseData = data;
+                    statusEl.className = 'license-status valid';
+                    statusEl.innerHTML = '✅ Licence active — <strong>' + data.client_name + '</strong> (' + data.plan_label + ')';
+                    detailsEl.style.display = 'grid';
+
+                    document.getElementById('r_plan').textContent = data.plan_label;
+                    const remaining = data.videos_per_day - data.usage_today;
+                    document.getElementById('r_quota').textContent = remaining + '/' + data.videos_per_day;
+                    document.getElementById('r_days').textContent = data.remaining_days + 'j';
+
+                    // Limiter les options du select nb_videos
+                    const nbSelect = document.getElementById('v_nb');
+                    for (let opt of nbSelect.options) {
+                        opt.disabled = parseInt(opt.value) > remaining;
+                    }
+
+                    // Afficher la section génération
+                    document.getElementById('generate_section').classList.add('visible');
+                    toast('🔑 Licence validée !', 'success');
+
+                    // Sauvegarder en localStorage
+                    localStorage.setItem('clipo_key', key);
+                } else {
+                    statusEl.className = 'license-status invalid';
+                    statusEl.textContent = '❌ ' + (data.reason || 'Clé invalide');
+                    detailsEl.style.display = 'none';
+                    document.getElementById('generate_section').classList.remove('visible');
+                }
+            } catch(e) {
+                const statusEl = document.getElementById('license_status');
+                statusEl.className = 'license-status invalid';
+                statusEl.textContent = '❌ Impossible de joindre le serveur';
+            }
+
+            btn.innerHTML = 'Vérifier'; btn.disabled = false;
+        }
+
+        async function createVideo() {
+            const key = document.getElementById('license_key').value.trim();
+            if (!key || !licenseData) { showError('v_error', 'Vérifie d\'abord ta licence'); return; }
+
+            const query = document.getElementById('v_query').value.trim();
+            if (!query) { showError('v_error', 'Entre un nom de streamer ou mot-clé'); return; }
+
+            const btn = document.getElementById('v_btn');
+            btn.innerHTML = '<span class="spinner"></span> Envoi en cours...';
+            btn.disabled = true;
+            hideError('v_error');
+            document.getElementById('v_result').classList.remove('visible');
+
+            try {
+                const res = await fetch(SERVER + '/run', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        license_key: key,
+                        query: query,
+                        type: document.getElementById('v_type').value,
+                        period: document.getElementById('v_period').value,
+                        nb_videos: parseInt(document.getElementById('v_nb').value),
+                        lang: document.getElementById('v_lang').value,
+                        send_telegram: true,
+                        auto_post: false,
+                        ignore_history: document.getElementById('v_ignore').checked
+                    })
+                });
+                const data = await res.json();
+
+                if (res.ok && data.status === 'queued') {
+                    const el = document.getElementById('v_result');
+                    el.classList.add('visible');
+                    el.innerHTML = '🎉 <strong>' + data.message + '</strong><br>⏳ Position : #' + data.position + ' — Temps estimé : ~' + data.eta + ' min';
+                    toast('🚀 Vidéo en cours de création !', 'success');
+
+                    document.getElementById('queue_card').classList.add('visible');
+                    pollQueue();
+                } else {
+                    showError('v_error', '❌ ' + (data.message || data.error || 'Erreur'));
+                }
+            } catch(e) {
+                showError('v_error', '❌ Impossible de joindre le serveur');
+            }
+
+            btn.innerHTML = '🚀 Lancer la création'; btn.disabled = false;
+        }
+
+        let queueInterval = null;
+        async function pollQueue() {
+            if (queueInterval) clearInterval(queueInterval);
+
+            async function update() {
+                try {
+                    const res = await fetch(SERVER + '/queue');
+                    const data = await res.json();
+                    const info = document.getElementById('queue_info');
+                    let html = '';
+
+                    if (data.status.state === 'working') {
+                        html += '🔨 <strong>En cours :</strong> ' + data.status.current_job_name + '<br>';
+                    } else {
+                        html += '💤 <strong>Aucun traitement en cours</strong><br>';
+                    }
+
+                    if (data.count > 0) {
+                        html += '📋 <strong>' + data.count + '</strong> en attente :<br>';
+                        data.waiting_list.forEach((name, i) => {
+                            html += '&nbsp;&nbsp;' + (i+1) + '. ' + name + '<br>';
+                        });
+                    } else if (data.status.state === 'idle') {
+                        html += '✅ Terminé ! Ta vidéo sera envoyée sur Telegram sous peu.';
+                        clearInterval(queueInterval);
+                        queueInterval = null;
+                    }
+
+                    info.innerHTML = html;
+                } catch(e) {}
+            }
+
+            await update();
+            queueInterval = setInterval(update, 5000);
+        }
+
+        function showError(id, msg) {
+            const el = document.getElementById(id);
+            el.textContent = msg; el.classList.add('visible');
+        }
+        function hideError(id) { document.getElementById(id).classList.remove('visible'); }
+
+        function toast(msg, type = 'success') {
+            const el = document.getElementById('toast');
+            el.textContent = msg; el.className = 'show ' + type;
+            setTimeout(() => el.className = type, 3500);
+        }
+
+        // Auto-load depuis localStorage ou ?key=
+        window.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const urlKey = params.get('key');
+            const savedKey = localStorage.getItem('clipo_key');
+            const key = urlKey || savedKey;
+            if (key) {
+                document.getElementById('license_key').value = key.toUpperCase();
+                checkLicense();
+            }
+        });
+    </script>
+</body>
+</html>

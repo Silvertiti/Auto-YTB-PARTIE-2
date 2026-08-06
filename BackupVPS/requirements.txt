@@ -10,3 +10,7 @@ streamlink
 yt-dlp @ https://github.com/yt-dlp/yt-dlp/archive/master.zip
 Pillow
 groq
+apscheduler
+pytz
+shazamio
+nest-asyncio

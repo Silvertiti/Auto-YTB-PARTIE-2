@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Twitch Bot - Dashboard</title>
+    <title>Clipo - Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -114,6 +114,7 @@
             font-size: 1.5rem;
             font-weight: 800;
             background: linear-gradient(135deg, #fff, #94a3b8);
+            background-clip: text;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
@@ -339,8 +340,17 @@
 
         <div class="bg-slate-800 p-6 rounded-lg shadow-2xl border border-slate-700">
             <div class="flex justify-between items-center mb-6 pb-4 border-b border-slate-700">
-                <h1 class="text-xl font-bold text-white tracking-wide">🤖 Twitch Bot V5</h1>
-                <div id="status_dot" class="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e]"></div>
+                <h1 class="text-xl font-bold text-white tracking-wide">🤖 Clipo Dashboard</h1>
+                <div class="flex items-center gap-3">
+                    <a href="/" class="text-xs font-bold text-slate-400 hover:text-white transition">🏠 Accueil</a>
+                    <a href="/admin/manage-licenses" class="text-xs font-bold text-indigo-400 hover:text-indigo-300 bg-indigo-400/10 hover:bg-indigo-400/15 border border-indigo-400/20 px-3 py-1.5 rounded-lg transition flex items-center gap-1">
+                        🔑 Licences
+                    </a>
+                    <a href="/admin/logout" class="text-xs font-bold text-red-400 hover:text-red-300 bg-red-400/10 border border-red-400/20 px-3 py-1.5 rounded-lg transition">
+                        🚪 Déconnexion
+                    </a>
+                    <div id="status_dot" class="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_10px_#22c55e]"></div>
+                </div>
             </div>
 
             <div class="space-y-5">
@@ -439,6 +449,11 @@
                                 class="w-4 h-4 rounded bg-slate-800 border-slate-600 text-red-500">
                             <span class="ml-2 text-sm text-red-400 font-bold">▶️ YouTube</span>
                         </label>
+                        <label class="flex items-center cursor-pointer">
+                            <input type="checkbox" id="ignore_history"
+                                class="w-4 h-4 rounded bg-slate-800 border-slate-600 text-yellow-500">
+                            <span class="ml-2 text-sm text-yellow-400">📜 Ignorer l'historique</span>
+                        </label>
                     </div>
                     <div id="schedule_zone"
                         class="hidden mt-3 pt-3 border-t border-slate-700 flex items-center justify-between">
@@ -463,6 +478,17 @@
                     🚀 LANCER
                 </button>
                 <div id="status" class="text-xs font-mono text-center text-slate-500 h-4"></div>
+
+                <!-- Section File d'attente -->
+                <div id="queue_container" class="mt-4 pt-4 border-t border-slate-700 hidden">
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+                        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">File d'attente</h3>
+                    </div>
+                    <div id="queue_content" class="space-y-2 max-h-40 overflow-y-auto pr-2 scrollbar-hide">
+                        <!-- Rempli par le JS -->
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -555,7 +581,7 @@
             <!-- TAB COMPTES -->
             <div id="content_comptes" class="tab-content">
                 <!-- Global summary -->
-                <div id="global_summary" class="grid grid-cols-2 md:grid-cols-4 gap-3 p-4"></div>
+                <div id="global_summary" class="grid grid-cols-2 md:grid-cols-5 gap-3 p-4"></div>
                 <!-- Camembert répartition des vues -->
                 <div class="p-4 pt-0">
                     <div class="chart-container" style="padding: 20px;">
@@ -583,6 +609,11 @@
                                     Par Heure</button>
                                 <button onclick="setTrendMode('day')" id="trend_mode_day" class="toggle-btn">📅 Par
                                     Jour</button>
+                            </div>
+                            <!-- Sous-menu pour le mode jour -->
+                            <div id="day_trend_options" class="toggle-group hidden ml-2 scale-90 origin-left">
+                                <button onclick="setDayTrendMode('average')" id="day_mode_avg" class="toggle-btn active" style="font-size: 11px;">Moyenne (Lun-Dim)</button>
+                                <button onclick="setDayTrendMode('precise')" id="day_mode_precise" class="toggle-btn" style="font-size: 11px;">📅 Date Précise</button>
                             </div>
                         </div>
                         <div class="flex items-center gap-2">
@@ -860,14 +891,16 @@
                 publish_now: document.getElementById('publish_now').checked,
                 schedule_hour: document.getElementById('schedule_hour').value,
                 schedule_minute: document.getElementById('schedule_minute').value,
-                youtube_mode: document.getElementById('youtube_mode').checked
+                youtube_mode: document.getElementById('youtube_mode').checked,
+                ignore_history: document.getElementById('ignore_history').checked
             };
 
             try {
                 const res = await fetch('/run', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 const data = await res.json();
-                status.innerText = (res.status === 429 ? "⚠️ " : (data.status === 'success' ? "✅ " : "❌ ")) + data.message;
-                status.className = "text-xs font-mono text-center mt-2 h-4 font-bold " + (data.status === 'success' ? "text-green-400" : "text-red-400");
+                const isOk = data.status === 'success' || data.status === 'queued';
+                status.innerText = (res.status === 429 ? "⚠️ " : (isOk ? "✅ " : "❌ ")) + (data.message || data.error || "Erreur");
+                status.className = "text-xs font-mono text-center mt-2 h-4 font-bold " + (isOk ? "text-green-400" : "text-red-400");
             } catch (e) { status.innerText = "❌ Erreur serveur"; }
             setTimeout(() => { btn.disabled = false; btn.classList.remove('opacity-50', 'cursor-not-allowed'); }, 3000);
         }
@@ -948,6 +981,7 @@
                         pubDateStr: pubDateStr,
                         pubDateObj: pubDateObj || new Date(0),
                         url: url,
+                        followers: last.followers || 0,
                         history: history // ON GARDE BIEN L'HISTORIQUE
                     };
                 });
@@ -1419,19 +1453,22 @@
                     if (m) acc = m[1];
                 }
 
-                if (!accountMap[acc]) accountMap[acc] = { views: 0, likes: 0, videos: 0, ratios: [] };
+                if (!accountMap[acc]) accountMap[acc] = { views: 0, likes: 0, videos: 0, ratios: [], followers: 0 };
                 accountMap[acc].views += item.views;
                 accountMap[acc].likes += item.likes;
                 accountMap[acc].videos += 1;
                 accountMap[acc].ratios.push(item.ratio);
+                // On prend le nombre d'abonnés le plus récent (on suppose qu'il est dans chaque item)
+                if (item.followers > accountMap[acc].followers) accountMap[acc].followers = item.followers;
             });
 
             // Global summary
-            let totalViews = 0, totalLikes = 0, totalVideos = 0, allRatios = [];
+            let totalViews = 0, totalLikes = 0, totalVideos = 0, allRatios = [], totalFollowers = 0;
             Object.values(accountMap).forEach(a => {
                 totalViews += a.views;
                 totalLikes += a.likes;
                 totalVideos += a.videos;
+                totalFollowers += a.followers;
                 allRatios = allRatios.concat(a.ratios);
             });
             const avgGlobalRatio = allRatios.length > 0 ? (allRatios.reduce((s, v) => s + v, 0) / allRatios.length).toFixed(2) : '0';
@@ -1447,12 +1484,16 @@
                     <div class="text-xl font-extrabold text-red-400">${totalLikes.toLocaleString()}</div>
                 </div>
                 <div class="global-stat-card">
-                    <div class="text-[10px] text-slate-400 uppercase font-bold mb-1">Ratio Moyen</div>
-                    <div class="text-xl font-extrabold text-yellow-400">${avgGlobalRatio}%</div>
+                    <div class="text-[10px] text-slate-400 uppercase font-bold mb-1">Total Abonnés</div>
+                    <div class="text-xl font-extrabold text-purple-400">${totalFollowers.toLocaleString()}</div>
                 </div>
                 <div class="global-stat-card">
                     <div class="text-[10px] text-slate-400 uppercase font-bold mb-1">Vidéos</div>
                     <div class="text-xl font-extrabold text-emerald-400">${totalVideos}</div>
+                </div>
+                <div class="global-stat-card">
+                    <div class="text-[10px] text-slate-400 uppercase font-bold mb-1">Ratio Moyen</div>
+                    <div class="text-xl font-extrabold text-yellow-400">${avgGlobalRatio}%</div>
                 </div>
             `;
 
@@ -1484,23 +1525,28 @@
                             <div class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Compte</div>
                             <div class="text-lg font-extrabold" style="color: ${c.accent}">@${name}</div>
                         </div>
-                        <div class="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold" style="background: ${c.accent}20; color: ${c.accent}">
-                            🎬 ${stats.videos} vidéo${stats.videos > 1 ? 's' : ''}
+                        <div class="flex flex-col items-end">
+                            <div class="text-[10px] font-extrabold text-purple-400">👥 ${stats.followers.toLocaleString()}</div>
+                            <div class="text-[8px] text-slate-500 uppercase font-bold">abonnés</div>
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-3 gap-3 mb-4">
+                    <div class="grid grid-cols-4 gap-2 mb-4">
                         <div>
-                            <div class="text-[9px] text-slate-500 uppercase font-bold">Vues</div>
-                            <div class="stat-value text-lg">${stats.views.toLocaleString()}</div>
+                            <div class="text-[8px] text-slate-500 uppercase font-bold">Vues</div>
+                            <div class="stat-value text-base">${stats.views.toLocaleString()}</div>
                         </div>
                         <div>
-                            <div class="text-[9px] text-slate-500 uppercase font-bold">Likes</div>
-                            <div class="stat-value text-lg" style="background: linear-gradient(135deg, #f87171, #ef4444); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">${stats.likes.toLocaleString()}</div>
+                            <div class="text-[8px] text-slate-500 uppercase font-bold">Likes</div>
+                            <div class="stat-value text-base" style="background: linear-gradient(135deg, #f87171, #ef4444); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">${stats.likes.toLocaleString()}</div>
                         </div>
                         <div>
-                            <div class="text-[9px] text-slate-500 uppercase font-bold">Ratio</div>
-                            <div class="stat-value text-lg" style="background: linear-gradient(135deg, #fbbf24, #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">${avgRatio}%</div>
+                            <div class="text-[8px] text-slate-500 uppercase font-bold">Ratio</div>
+                            <div class="stat-value text-base" style="background: linear-gradient(135deg, #fbbf24, #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">${avgRatio}%</div>
+                        </div>
+                        <div>
+                            <div class="text-[8px] text-slate-500 uppercase font-bold">Vidéos</div>
+                            <div class="stat-value text-base" style="background: linear-gradient(135deg, #34d399, #10b981); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">${stats.videos}</div>
                         </div>
                     </div>
 
@@ -1524,11 +1570,28 @@
         // --- TENDANCES ---
         let trendChart = null;
         let trendMode = 'hour'; // 'hour' ou 'day'
+        let dayTrendMode = 'average'; // 'average' (Lun-Dim) ou 'precise' (Date spécifique)
 
         function setTrendMode(mode) {
             trendMode = mode;
             document.getElementById('trend_mode_hour').classList.toggle('active', mode === 'hour');
             document.getElementById('trend_mode_day').classList.toggle('active', mode === 'day');
+            
+            // Afficher/Masquer les sous-options jour
+            const dayOptions = document.getElementById('day_trend_options');
+            if (mode === 'day') {
+                dayOptions.classList.remove('hidden');
+            } else {
+                dayOptions.classList.add('hidden');
+            }
+            
+            renderTrendChart();
+        }
+
+        function setDayTrendMode(subMode) {
+            dayTrendMode = subMode;
+            document.getElementById('day_mode_avg').classList.toggle('active', subMode === 'average');
+            document.getElementById('day_mode_precise').classList.toggle('active', subMode === 'precise');
             renderTrendChart();
         }
 
@@ -1608,14 +1671,64 @@
                     countData.push(countBuckets[h] || 0);
                 }
             } else {
-                for (let d = 1; d <= 7; d++) {
-                    const dayIdx = d % 7; // Lundi=1 ... Dimanche=0
-                    labels.push(joursFR[dayIdx]);
-                    const avg = countBuckets[dayIdx] ? Math.round(buckets[dayIdx] / countBuckets[dayIdx]) : 0;
-                    const avgLikes = likesCount[dayIdx] ? Math.round(likesBuckets[dayIdx] / likesCount[dayIdx]) : 0;
-                    viewsData.push(avg);
-                    likesData.push(avgLikes);
-                    countData.push(countBuckets[dayIdx] || 0);
+                // Mode Jour
+                if (dayTrendMode === 'average') {
+                    // Moyenne par jour de la semaine (existant)
+                    for (let d = 1; d <= 7; d++) {
+                        const dayIdx = d % 7; // Lundi=1 ... Dimanche=0
+                        labels.push(joursFR[dayIdx]);
+                        const avg = countBuckets[dayIdx] ? Math.round(buckets[dayIdx] / countBuckets[dayIdx]) : 0;
+                        const avgLikes = likesCount[dayIdx] ? Math.round(likesBuckets[dayIdx] / likesCount[dayIdx]) : 0;
+                        viewsData.push(avg);
+                        likesData.push(avgLikes);
+                        countData.push(countBuckets[dayIdx] || 0);
+                    }
+                } else {
+                    // Mode Date Précise (Nouveau)
+                    // On doit reconstruire les buckets par date YYYY-MM-DD
+                    const dateBuckets = {}; 
+                    const dateCounts = {};
+                    const dateLikes = {};
+                    
+                    filtered.forEach(item => {
+                        const pubDate = item.pubDateObj;
+                        if (!pubDate || pubDate.getTime() === 0) return;
+                        
+                        // Clé = YYYY-MM-DD
+                        const key = pubDate.toISOString().split('T')[0];
+                        
+                        if (!dateBuckets[key]) { dateBuckets[key] = 0; dateCounts[key] = 0; dateLikes[key] = 0; }
+                        dateBuckets[key] += item.views;
+                        dateLikes[key] += item.likes;
+                        dateCounts[key] += 1;
+                    });
+                    
+                    // Trier les dates
+                    const sortedDates = Object.keys(dateBuckets).sort();
+                    
+                    // Limiter aux 30 derniers jours si trop de données ? 
+                    // Pour l'instant on affiche tout, le zoom chartjs gère ou ça scrollera
+                    
+                    sortedDates.forEach(dateStr => {
+                        // Formater dd/mm
+                        const parts = dateStr.split('-');
+                        labels.push(`${parts[2]}/${parts[1]}`);
+                        
+                        // Ici on veut la SOMME des vues ce jour-là ou la MOYENNE des vidéos publiées ce jour-là ?
+                        // "nombre de vue par jour précis" -> Total ou Moyenne ?
+                        // Généralement pour une timeline précise, on veut voir le volume total généré ce jour-là OU la perf moyenne.
+                        // Vu que l'autre est une "moyenne", restons cohérents : moyenne par vidéo ce jour-là.
+                        // SI l'utilisateur veut le TOTAL, c'est différent. 
+                        // Mais dans le graphique actuel c'est "Vues moy." et "Likes moy."
+                        // On va garder MOYENNE pour l'instant pour être cohérent avec l'axe Y.
+                        
+                        const avg = dateCounts[dateStr] ? Math.round(dateBuckets[dateStr] / dateCounts[dateStr]) : 0;
+                        const avgLikes = dateCounts[dateStr] ? Math.round(dateLikes[dateStr] / dateCounts[dateStr]) : 0;
+                        
+                        viewsData.push(avg);
+                        likesData.push(avgLikes);
+                        countData.push(dateCounts[dateStr] || 0);
+                    });
                 }
             }
 
@@ -1744,12 +1857,13 @@
             const accountMap = {};
             globalData.forEach(item => {
                 let acc = getAccountFromItem(item);
-                if (!accountMap[acc]) accountMap[acc] = { total_vues: 0, total_likes: 0, nb_videos: 0, ratios: [], videos: [] };
+                if (!accountMap[acc]) accountMap[acc] = { total_vues: 0, total_likes: 0, nb_videos: 0, ratios: [], videos: [], followers: 0 };
                 accountMap[acc].total_vues += item.views;
                 accountMap[acc].total_likes += item.likes;
                 accountMap[acc].nb_videos += 1;
                 accountMap[acc].ratios.push(item.ratio);
                 accountMap[acc].videos.push(item.title);
+                if (item.followers > accountMap[acc].followers) accountMap[acc].followers = item.followers;
             });
 
             let totalViews = 0, totalLikes = 0;
@@ -1763,6 +1877,7 @@
                     nb_videos: stats.nb_videos,
                     total_vues: stats.total_vues,
                     total_likes: stats.total_likes,
+                    abonnés: stats.followers,
                     ratio_moyen: avgRatio,
                     titres_videos: stats.videos
                 };
@@ -1800,6 +1915,7 @@
                     url: item.url,
                     vues: item.views,
                     likes: item.likes,
+                    abonnés: item.followers,
                     ratio_engagement: item.ratio,
                     date_publication: item.pubDateObj && item.pubDateObj.getTime() > 0
                         ? item.pubDateObj.toISOString()
@@ -1901,8 +2017,53 @@
             }, 2000);
         }
 
+        async function pollQueue() {
+            try {
+                const res = await fetch('/queue');
+                const data = await res.json();
+                const container = document.getElementById('queue_container');
+                const content = document.getElementById('queue_content');
+                
+                if (data.count === 0 && data.status.state === 'idle') {
+                    container.classList.add('hidden');
+                    return;
+                }
+                
+                container.classList.remove('hidden');
+                let html = '';
+                
+                // Job en cours
+                if (data.status.state === 'working') {
+                    const modeIcon = data.status.current_mode === 'live' ? '🔴' : '📦';
+                    html += `
+                        <div class="bg-blue-500/10 border border-blue-500/30 p-2 rounded flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs">${modeIcon}</span>
+                                <span class="text-xs font-bold text-blue-400">EN COURS : ${data.status.current_job_name}</span>
+                            </div>
+                            <div class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-ping"></div>
+                        </div>
+                    `;
+                }
+                
+                // Jobs en attente
+                data.waiting_list.forEach((name, i) => {
+                    html += `
+                        <div class="bg-slate-700/30 p-2 rounded flex items-center gap-2">
+                            <span class="text-[10px] text-slate-500 font-bold w-4">${i+1}.</span>
+                            <span class="text-xs text-slate-300">${name}</span>
+                        </div>
+                    `;
+                });
+                
+                content.innerHTML = html;
+            } catch (e) { console.error("Erreur pollQueue", e); }
+        }
+
         loadStats();
         setInterval(loadStats, 30000);
+        pollQueue();
+        setInterval(pollQueue, 5000);
     </script>
 </body>
 

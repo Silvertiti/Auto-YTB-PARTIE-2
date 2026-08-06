@@ -1,36 +1,71 @@
-# Python internals
-__pycache__/
-*.py[cod]
-.venv/
-venv/
-
-# Media files (Images & Videos)
-*.jpg
-*.jpeg
-*.png
-*.gif
-*.bmp
-*.tiff
-*.webp
-*.mp4
-*.avi
-*.mov
-*.mkv
-*.flv
-*.wmv
-
-# Directories containing generated/downloaded media
-clips/
-clips_cropped/
-clips_downloaded/
-clips_tiktok/
-thumbnails/
-
-# Datasets and Models
-dataset/
-runs/
-*.pt
-*.pth
-labels/
-
+# Environments & Credentials
 .env
+vps_credentials.txt
+bot_settings.json
+config_client.json
+licenses.json
+zernio_accounts.json
+mes_comptes.txt
+VPS OVH.txt
+
+# Executables & Large Model Weights
+plink.exe
+pscp.exe
+*.pt
+**/*.pt
+
+# Python & Virtual Env
+.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+
+# Browser Profiles
+chrome_profile_*
+chrome_zernio_profile
+edge_profile_*
+edge_sys_profile_*
+
+# Databases, Logs, Analytics & Media Files
+*.db
+**/*.db
+*.log
+**/*.log
+*.mp3
+**/*.mp3
+video_analytics.json
+**/video_analytics.json
+tracking.json
+**/tracking.json
+creation_logs.json
+**/creation_logs.json
+expired_videos.json
+**/expired_videos.json
+downloaded_clips.txt
+**/downloaded_clips.txt
+
+# Media Outputs & Downloads
+clips/
+**/clips/
+clips_cropped/
+**/clips_cropped/
+clips_downloaded/
+**/clips_downloaded/
+clips_tiktok/
+**/clips_tiktok/
+thumbnails/
+**/thumbnails/
+thumbnails_variations/
+**/thumbnails_variations/
+youtube_crashes_output/
+**/youtube_crashes_output/
+runs/
+**/runs/
+dataset/
+**/dataset/
+labels/
+**/labels/
+stats_tiktok/
+**/stats_tiktok/
+
+

@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clipo Automation — L'avenir de la création de contenu</title>
+    <meta name="description" content="Automatisez votre présence sur TikTok et YouTube avec Clipo. Clips Twitch, montage IA et publication simplifiée.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --bg:     #06080f;
+            --bg2:    #0d1117;
+            --accent: #6366f1;
+            --accent2:#8b5cf6;
+            --text:   #e2e8f0;
+            --muted:  #94a3b8;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* --- BACKGROUND GLOW --- */
+        .bg-glow {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none; z-index: 0;
+            background:
+                radial-gradient(ellipse 80% 60% at 50% -10%, rgba(99,102,241,.15) 0%, transparent 70%),
+                radial-gradient(ellipse 40% 30% at 90% 90%, rgba(139,92,246,.1) 0%, transparent 70%);
+        }
+
+        /* --- NAVIGATION --- */
+        nav {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+            height: 80px; display: flex; align-items: center; justify-content: space-between;
+            padding: 0 5%; background: rgba(6,8,15,.7); backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(99,102,241,.1);
+        }
+        .logo {
+            font-size: 24px; font-weight: 900; color: white; text-decoration: none;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .logo span { background: linear-gradient(135deg,#6366f1,#a78bfa); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        .nav-links { display: flex; gap: 30px; align-items: center; }
+        .nav-link { text-decoration: none; color: var(--muted); font-size: 14px; font-weight: 600; transition: color .3s; }
+        .nav-link:hover { color: white; }
+        
+        .btn-portal {
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            color: white; padding: 10px 24px; border-radius: 40px;
+            font-size: 14px; font-weight: 700; text-decoration: none;
+            box-shadow: 0 8px 24px rgba(99,102,241,.3); transition: transform .3s, box-shadow .3s;
+        }
+        .btn-portal:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(99,102,241,.4); }
+
+        /* --- HERO --- */
+        .hero {
+            height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            text-align: center; padding: 0 20px; position: relative; z-index: 1;
+        }
+        .hero-badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: rgba(99,102,241,.1); border: 1px solid rgba(99,102,241,.2);
+            color: #a78bfa; padding: 6px 18px; border-radius: 100px;
+            font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+            margin-bottom: 30px; animation: fadeInDown 1s ease;
+        }
+        .hero h1 {
+            font-size: clamp(40px, 8vw, 84px); font-weight: 900; line-height: 0.95;
+            color: white; margin-bottom: 24px; animation: fadeInUp 1s ease both;
+        }
+        .hero h1 em {
+            font-style: normal;
+            background: linear-gradient(135deg,#fff,#a78bfa,#6366f1);
+            background-clip: text;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .hero p {
+            font-size: clamp(16px, 2vw, 20px); color: var(--muted); max-width: 700px;
+            margin-bottom: 40px; animation: fadeInUp 1s ease .2s both;
+        }
+
+        .hero-btns { display: flex; gap: 20px; animation: fadeInUp 1s ease .4s both; }
+        .btn-primary {
+            background: white; color: var(--bg); padding: 16px 36px; border-radius: 100px;
+            font-size: 16px; font-weight: 800; text-decoration: none; transition: transform .3s;
+        }
+        .btn-primary:hover { transform: scale(1.05); }
+        .btn-secondary {
+            background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1);
+            color: white; padding: 16px 36px; border-radius: 100px;
+            font-size: 16px; font-weight: 800; text-decoration: none; transition: all .3s;
+        }
+        .btn-secondary:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.2); }
+
+        /* --- FEATURES --- */
+        .features { padding: 100px 5%; background: var(--bg2); position: relative; z-index: 1; }
+        .section-title { text-align: center; margin-bottom: 80px; }
+        .section-title h2 { font-size: 42px; font-weight: 900; color: white; margin-bottom: 16px; }
+        .section-title p { color: var(--muted); max-width: 600px; margin: 0 auto; }
+
+        .feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; }
+        @media (max-width: 900px) { .feature-grid { grid-template-columns: 1fr; } }
+
+        .feature-card {
+            background: rgba(255,255,255,.02); border: 1px solid rgba(99,102,241,.1);
+            border-radius: 30px; padding: 40px; transition: transform .3s, border-color .3s;
+        }
+        .feature-card:hover { transform: translateY(-10px); border-color: rgba(99,102,241,.3); }
+        .feature-icon {
+            width: 60px; height: 60px; background: rgba(99,102,241,.1);
+            border-radius: 20px; display: flex; align-items: center; justify-content: center;
+            font-size: 28px; margin-bottom: 24px;
+        }
+        .feature-card h3 { font-size: 24px; font-weight: 800; color: white; margin-bottom: 16px; }
+        .feature-card p { color: var(--muted); font-size: 16px; }
+
+        /* --- CTA --- */
+        .cta { padding: 120px 5%; text-align: center; position: relative; z-index: 1; }
+        .cta-card {
+            background: linear-gradient(135deg, rgba(99,102,241,.1), rgba(139,92,246,.1));
+            border: 1px solid rgba(99,102,241,.2); border-radius: 40px; padding: 80px 40px;
+        }
+        .cta h2 { font-size: 48px; font-weight: 900; color: white; margin-bottom: 24px; }
+        .cta p { font-size: 20px; color: var(--muted); margin-bottom: 40px; }
+
+        /* --- FOOTER --- */
+        footer { padding: 60px 5%; border-top: 1px solid rgba(255,255,255,.05); text-align: center; color: var(--muted); font-size: 14px; }
+
+        /* --- ANIMATIONS --- */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-glow"></div>
+
+    <nav>
+        <a href="/" class="logo">⚡ <span>Clipo</span></a>
+        <div class="nav-links">
+            <a href="/client/generate" class="nav-link">Générer</a>
+            <a href="/client" class="nav-link">Ma Licence</a>
+            <a href="/admin/login" class="btn-portal">Accès Admin</a>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="hero-badge">⚡ La révolution du contenu short-form</div>
+        <h1>Automatisez votre<br><em>Succès Digital</em></h1>
+        <p>Clipo transforme les meilleurs moments Twitch en vidéos captivantes pour TikTok et Shorts. Montage automatique, quotas gérés et envoi Telegram instantané.</p>
+        <div class="hero-btns">
+            <a href="/client/generate" class="btn-primary">Commencer maintenant</a>
+            <a href="/client" class="btn-secondary">Voir mon statut</a>
+        </div>
+    </section>
+
+    <section class="features">
+        <div class="section-title">
+            <h2>Puissance et Simplicité</h2>
+            <p>Une solution complète pour les streamers et créateurs qui veulent exploser leur visibilité.</p>
+        </div>
+        <div class="feature-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🎬</div>
+                <h3>Auto-Clipper</h3>
+                <p>Récupérez automatiquement les clips Twitch les plus populaires de votre chaîne ou catégorie préférée en un clic.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🤖</div>
+                <h3>Édition IA</h3>
+                <p>Notre moteur recadre, optimise et prépare vos vidéos au format vertical pour un impact maximum sur mobile.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📲</div>
+                <h3>Livraison Telegram</h3>
+                <p>Recevez vos créations directement dans votre poche. Prêtes à être publiées en quelques secondes.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta">
+        <div class="cta-card">
+            <h2>Prêt à passer à l'échelle supérieure ?</h2>
+            <p>Rejoignez les créateurs qui automatisent déjà leur production.</p>
+            <a href="/client/generate" class="btn-primary">Lancer ma première vidéo</a>
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2024 Clipo Automation. Tous droits réservés.</p>
+    </footer>
+</body>
+</html>

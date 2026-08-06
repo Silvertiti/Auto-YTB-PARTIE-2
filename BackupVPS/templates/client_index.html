@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clipo Automation — Espace Client</title>
+    <meta name="description" content="Gérez votre licence Clipo Automation. Vérifiez votre statut, liez votre Telegram et consultez votre quota de vidéos.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --bg:     #06080f;
+            --bg2:    #0d1117;
+            --card:   #0f1724;
+            --border: rgba(99,102,241,.2);
+            --accent: #6366f1;
+            --accent2:#8b5cf6;
+            --text:   #e2e8f0;
+            --muted:  #64748b;
+            --green:  #10b981;
+            --red:    #ef4444;
+            --yellow: #f59e0b;
+        }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* --- BACKGROUND GLOW --- */
+        .bg-glow {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none; z-index: 0;
+            background:
+                radial-gradient(ellipse 80% 60% at 50% -10%, rgba(99,102,241,.12) 0%, transparent 70%),
+                radial-gradient(ellipse 50% 40% at 80% 80%, rgba(139,92,246,.07) 0%, transparent 70%);
+        }
+
+        /* --- HEADER --- */
+        header {
+            position: sticky; top: 0; z-index: 50;
+            background: rgba(6,8,15,.9);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(99,102,241,.12);
+            padding: 0 24px;
+            height: 64px;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .logo {
+            font-size: 18px; font-weight: 900; color: white;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .logo span { background: linear-gradient(135deg,#6366f1,#a78bfa); background-clip: text; -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+        .header-badge {
+            font-size: 10px; font-weight: 700; text-transform: uppercase;
+            padding: 3px 10px; border-radius: 20px;
+            background: rgba(99,102,241,.12); color: #a78bfa;
+            border: 1px solid rgba(99,102,241,.25);
+        }
+
+        /* --- HERO --- */
+        .hero {
+            position: relative; z-index: 1;
+            text-align: center; padding: 80px 24px 60px;
+        }
+        .hero-tag {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+            padding: 5px 14px; border-radius: 40px;
+            background: rgba(99,102,241,.1); color: #a78bfa;
+            border: 1px solid rgba(99,102,241,.2);
+            margin-bottom: 24px;
+        }
+        .hero h1 {
+            font-size: clamp(28px, 6vw, 52px); font-weight: 900;
+            line-height: 1.1; color: white;
+            margin-bottom: 16px;
+        }
+        .hero h1 em {
+            font-style: normal;
+            background: linear-gradient(135deg,#6366f1,#a78bfa,#e879f9);
+            background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .hero p {
+            font-size: 16px; color: var(--muted); max-width: 500px;
+            margin: 0 auto 40px; line-height: 1.7;
+        }
+
+        /* --- CARDS --- */
+        .card {
+            background: var(--card);
+            border: 1px solid rgba(99,102,241,.15);
+            border-radius: 20px;
+            padding: 28px;
+            position: relative; z-index: 1;
+            transition: border-color .3s, box-shadow .3s;
+        }
+        .card:hover {
+            border-color: rgba(99,102,241,.35);
+            box-shadow: 0 0 40px rgba(99,102,241,.08);
+        }
+        .card-title {
+            font-size: 13px; font-weight: 800; text-transform: uppercase;
+            letter-spacing: .5px; color: var(--muted); margin-bottom: 20px;
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        /* --- CONTAINER --- */
+        .container { max-width: 860px; margin: 0 auto; padding: 0 20px 80px; position: relative; z-index: 1; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 640px) { .grid-2 { grid-template-columns: 1fr; } }
+
+        /* --- FORM ELEMENTS --- */
+        .field-label {
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+            color: var(--muted); display: block; margin-bottom: 7px;
+        }
+        .input {
+            width: 100%; background: rgba(255,255,255,.04); border: 1px solid rgba(99,102,241,.2);
+            border-radius: 10px; padding: 11px 14px; font-size: 14px; color: var(--text);
+            font-family: inherit; outline: none;
+            transition: border-color .2s, box-shadow .2s;
+        }
+        .input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(99,102,241,.15);
+        }
+        .input::placeholder { color: #475569; }
+
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+            padding: 12px 24px; border-radius: 10px; font-size: 14px; font-weight: 700;
+            cursor: pointer; border: none; font-family: inherit;
+            transition: all .2s;
+        }
+        .btn-main {
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            color: white; width: 100%;
+        }
+        .btn-main:hover { opacity: .9; transform: translateY(-1px); box-shadow: 0 8px 32px rgba(99,102,241,.3); }
+        .btn-main:active { transform: translateY(0); }
+        .btn-outline {
+            background: transparent; color: var(--accent);
+            border: 1px solid rgba(99,102,241,.35); width: 100%;
+        }
+        .btn-outline:hover { background: rgba(99,102,241,.08); }
+
+        /* --- STATUS DISPLAY --- */
+        #status_card { display: none; }
+        #status_card.visible { display: block; }
+
+        .status-header {
+            display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: 12px; margin-bottom: 20px;
+        }
+        .client-name { font-size: 20px; font-weight: 800; color: white; }
+        .status-badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 5px 14px; border-radius: 30px; font-size: 12px; font-weight: 800;
+        }
+        .status-valid   { background: rgba(16,185,129,.12); color: #34d399; border: 1px solid rgba(16,185,129,.25); }
+        .status-invalid { background: rgba(239,68,68,.12);  color: #f87171; border: 1px solid rgba(239,68,68,.25); }
+
+        .info-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+            margin-bottom: 20px;
+        }
+        @media (max-width: 500px) { .info-grid { grid-template-columns: 1fr; } }
+
+        .info-item {
+            background: rgba(255,255,255,.03);
+            border: 1px solid rgba(99,102,241,.1);
+            border-radius: 12px; padding: 14px;
+        }
+        .info-label { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; }
+        .info-value { font-size: 18px; font-weight: 800; color: white; }
+        .info-sub   { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+        /* Quota bar */
+        .quota-bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,.05); overflow: hidden; margin-top: 8px; }
+        .quota-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg,#6366f1,#8b5cf6); transition: width .8s cubic-bezier(.25,.46,.45,.94); }
+
+        /* Plan colors */
+        .plan-trial    { color: #94a3b8; }
+        .plan-starter  { color: #60a5fa; }
+        .plan-pro      { color: #a78bfa; }
+        .plan-lifetime { background: linear-gradient(90deg,#fb923c,#f59e0b); background-clip: text; -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+
+        /* --- STEPS --- */
+        .step {
+            display: flex; gap: 16px; align-items: flex-start;
+            padding: 18px 0; border-bottom: 1px solid rgba(99,102,241,.08);
+        }
+        .step:last-child { border-bottom: none; }
+        .step-num {
+            min-width: 36px; height: 36px; border-radius: 50%;
+            background: rgba(99,102,241,.12); border: 1px solid rgba(99,102,241,.25);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px; font-weight: 900; color: #a78bfa; flex-shrink: 0;
+        }
+        .step-title { font-size: 14px; font-weight: 700; color: white; margin-bottom: 4px; }
+        .step-desc  { font-size: 13px; color: var(--muted); line-height: 1.6; }
+        .step-code  {
+            font-family: monospace; font-size: 13px;
+            background: rgba(99,102,241,.1); color: #a78bfa;
+            border: 1px solid rgba(99,102,241,.2);
+            padding: 2px 8px; border-radius: 6px; display: inline-block; margin-top: 6px;
+        }
+
+        /* --- TOAST --- */
+        #toast {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(80px);
+            z-index: 9999; padding: 10px 20px; border-radius: 10px;
+            font-size: 13px; font-weight: 700; font-family: inherit;
+            transition: transform .3s, opacity .3s; opacity: 0; white-space: nowrap;
+        }
+        #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+        #toast.success { background: rgba(16,185,129,.2); color: #34d399; border: 1px solid rgba(16,185,129,.3); }
+        #toast.error   { background: rgba(239,68,68,.2);  color: #f87171; border: 1px solid rgba(239,68,68,.3); }
+
+        /* --- SPINNER --- */
+        .spinner {
+            display: inline-block; width: 16px; height: 16px;
+            border: 2px solid rgba(255,255,255,.2); border-top-color: white;
+            border-radius: 50%; animation: spin .6s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* --- ERROR MSG --- */
+        .error-msg {
+            background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.2);
+            border-radius: 10px; padding: 12px 16px;
+            color: #f87171; font-size: 13px; font-weight: 600; margin-top: 10px;
+            display: none;
+        }
+        .error-msg.visible { display: block; }
+
+        /* --- TG RESULT --- */
+        #tg_result { display: none; }
+        #tg_result.visible {
+            display: block;
+            background: rgba(16,185,129,.08); border: 1px solid rgba(16,185,129,.2);
+            border-radius: 10px; padding: 12px 16px; margin-top: 12px;
+            font-size: 13px; color: #34d399; font-weight: 600;
+        }
+
+        /* Divider */
+        .divider { height: 1px; background: rgba(99,102,241,.1); margin: 28px 0; }
+    </style>
+</head>
+<body>
+    <div class="bg-glow"></div>
+    <div id="toast"></div>
+
+    <!-- HEADER -->
+    <header>
+        <a href="/" style="text-decoration:none" class="logo">⚡ <span>Clipo</span></a>
+        <div style="display:flex; gap:8px">
+            <a href="/client" style="font-size:12px;font-weight:700;text-transform:uppercase;padding:6px 14px;border-radius:8px;text-decoration:none;background:rgba(99,102,241,.15);color:#a78bfa;border:1px solid rgba(99,102,241,.3)">⚙️ Config</a>
+            <a href="/client/generate" style="font-size:12px;font-weight:700;text-transform:uppercase;padding:6px 14px;border-radius:8px;text-decoration:none;color:#64748b;border:1px solid rgba(99,102,241,.15);transition:all .2s" onmouseover="this.style.color='#a78bfa';this.style.background='rgba(99,102,241,.08)'" onmouseout="this.style.color='#64748b';this.style.background='transparent'">🎬 Générer</a>
+        </div>
+    </header>
+
+    <!-- HERO -->
+    <div class="hero">
+        <div class="hero-tag">🎬 Automation TikTok & YouTube</div>
+        <h1>Gère ta <em>licence</em><br>et reçois tes vidéos</h1>
+        <p>Entre ta clé d'activation pour vérifier ton statut, puis lie ton Telegram pour recevoir tes vidéos automatiquement.</p>
+    </div>
+
+    <div class="container">
+
+        <!-- ÉTAPE 1 : VÉRIFIER LA CLEF -->
+        <div class="card" style="margin-bottom:20px">
+            <div class="card-title">🔑 Étape 1 — Vérifier ma licence</div>
+            <div style="display:flex; gap:10px; flex-wrap:wrap">
+                <div style="flex:1; min-width:220px">
+                    <label class="field-label">Ta clé de licence</label>
+                    <input id="license_key" type="text" class="input" placeholder="SIL-XXXXXXXXXXXXXXXX"
+                        oninput="this.value=this.value.toUpperCase()"
+                        onkeydown="if(event.key==='Enter') checkLicense()">
+                </div>
+                <div style="display:flex; align-items:flex-end;">
+                    <button class="btn btn-main" onclick="checkLicense()" style="width:160px" id="check_btn">
+                        Vérifier
+                    </button>
+                </div>
+            </div>
+            <div id="check_error" class="error-msg"></div>
+        </div>
+
+        <!-- RÉSULTAT STATUT -->
+        <div class="card" id="status_card" style="margin-bottom:20px">
+            <div class="status-header">
+                <div class="client-name" id="r_name">—</div>
+                <div class="status-badge status-valid" id="r_badge">✅ Active</div>
+            </div>
+
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-label">Plan</div>
+                    <div class="info-value" id="r_plan">—</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Expire le</div>
+                    <div class="info-value" id="r_expires">—</div>
+                    <div class="info-sub" id="r_days">—</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Quota aujourd'hui</div>
+                    <div class="info-value" id="r_quota">—</div>
+                    <div class="quota-bar"><div class="quota-fill" id="r_quota_bar" style="width:0%"></div></div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label">Telegram lié</div>
+                    <div class="info-value" id="r_tg">—</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ÉTAPE 2 : LIER TELEGRAM -->
+        <div class="card">
+            <div class="card-title">📲 Étape 2 — Lier mon Telegram</div>
+
+            <!-- Explication -->
+            <div class="step">
+                <div class="step-num">1</div>
+                <div>
+                    <div class="step-title">Trouve ton Chat ID</div>
+                    <div class="step-desc">
+                        Sur Telegram, envoie <strong>/start</strong> au bot
+                        <span class="step-code">@SilvertitiBot</span>
+                        Il te répondra automatiquement avec ton Chat ID.
+                    </div>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-num">2</div>
+                <div>
+                    <div class="step-title">Entre ta clé + Chat ID ci-dessous</div>
+                    <div class="step-desc">Une fois lié, toutes tes vidéos générées seront envoyées directement dans ton Telegram.</div>
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="grid-2" style="gap:10px; margin-bottom:14px">
+                <div>
+                    <label class="field-label">Ta clé de licence</label>
+                    <input id="tg_key" type="text" class="input" placeholder="SIL-XXXXXXXXXXXXXXXX"
+                        oninput="this.value=this.value.toUpperCase()">
+                </div>
+                <div>
+                    <label class="field-label">Ton Chat ID Telegram</label>
+                    <input id="tg_chatid" type="text" class="input" placeholder="123456789">
+                </div>
+            </div>
+            <button class="btn btn-main" onclick="linkTelegram()" id="tg_btn">
+                📲 Lier mon Telegram
+            </button>
+            <div id="tg_error" class="error-msg"></div>
+            <div id="tg_result"></div>
+        </div>
+
+
+        <!-- SECTION AIDE -->
+        <div class="divider"></div>
+        <div class="card">
+            <div class="card-title">❓ Besoin d'aide ?</div>
+            <div class="step">
+                <div class="step-num">💬</div>
+                <div>
+                    <div class="step-title">Contacte le support</div>
+                    <div class="step-desc">
+                        Un problème avec ta licence ? Contacte-moi directement sur Telegram :
+                        <span class="step-code">@silvertiti_support</span>
+                    </div>
+                </div>
+            </div>
+            <div class="step">
+                <div class="step-num">🔄</div>
+                <div>
+                    <div class="step-title">Vérifier le statut dans Telegram</div>
+                    <div class="step-desc">
+                        Tu peux vérifier ton quota directement dans le bot avec la commande :
+                        <span class="step-code">/status SIL-TACLÉ</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const SERVER = 'http://51.91.56.161:5000';  // VPS Flask
+
+        async function checkLicense() {
+            const key = document.getElementById('license_key').value.trim();
+            if (!key) { showError('check_error', 'Entre ta clé de licence (SIL-...)'); return; }
+
+            const btn = document.getElementById('check_btn');
+            btn.innerHTML = '<span class="spinner"></span> Vérification...';
+            btn.disabled = true;
+            hideError('check_error');
+
+            try {
+                const res = await fetch(SERVER + '/license/check', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key })
+                });
+                const data = await res.json();
+
+                if (data.valid) {
+                    showStatus(data);
+                    // Pré-rempli le champ clé de la section Telegram
+                    document.getElementById('tg_key').value = key;
+                } else {
+                    showError('check_error', '❌ ' + (data.reason || 'Clé invalide'));
+                    document.getElementById('status_card').classList.remove('visible');
+                }
+            } catch(e) {
+                showError('check_error', '❌ Impossible de joindre le serveur. Réessaie dans un instant.');
+            }
+
+            btn.innerHTML = 'Vérifier'; btn.disabled = false;
+        }
+
+        function showStatus(data) {
+            const card = document.getElementById('status_card');
+            card.classList.add('visible');
+
+            document.getElementById('r_name').textContent   = data.client_name;
+            document.getElementById('r_expires').textContent = data.expires_at;
+            document.getElementById('r_days').textContent    = data.remaining_days + ' jours restants';
+
+            // Plan
+            const planEl = document.getElementById('r_plan');
+            const planClasses = { trial:'plan-trial', starter:'plan-starter', pro:'plan-pro', lifetime:'plan-lifetime' };
+            planEl.textContent  = data.plan_label;
+            planEl.className    = 'info-value ' + (planClasses[data.plan] || '');
+
+            // Quota
+            const pct = Math.min(100, Math.round((data.usage_today / (data.videos_per_day || 1)) * 100));
+            document.getElementById('r_quota').textContent = data.usage_today + ' / ' + data.videos_per_day;
+            document.getElementById('r_quota_bar').style.width = pct + '%';
+
+            // Badge
+            const badge = document.getElementById('r_badge');
+            badge.textContent = '✅ Licence Active';
+            badge.className   = 'status-badge status-valid';
+
+            // Telegram
+            const tg = data.telegram_chat_id;
+            document.getElementById('r_tg').textContent = tg ? '📲 Lié (' + tg + ')' : '📵 Non lié';
+        }
+
+        async function linkTelegram() {
+            const key     = document.getElementById('tg_key').value.trim();
+            const chatId  = document.getElementById('tg_chatid').value.trim();
+            if (!key)    { showError('tg_error', 'Entre ta clé de licence'); return; }
+            if (!chatId) { showError('tg_error', 'Entre ton Chat ID Telegram'); return; }
+
+            const btn = document.getElementById('tg_btn');
+            btn.innerHTML = '<span class="spinner"></span> Liaison en cours...';
+            btn.disabled = true;
+            hideError('tg_error');
+            document.getElementById('tg_result').classList.remove('visible');
+
+            try {
+                const res = await fetch(SERVER + '/license/setup-telegram', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key, telegram_chat_id: chatId })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    const el = document.getElementById('tg_result');
+                    el.textContent = '🎉 Parfait ' + data.client_name + ' ! Ton Telegram est maintenant lié. Tu recevras tes vidéos directement ici !';
+                    el.classList.add('visible');
+                    toast('📲 Telegram lié avec succès !', 'success');
+                } else {
+                    showError('tg_error', '❌ ' + (data.error || 'Erreur inconnue'));
+                }
+            } catch(e) {
+                showError('tg_error', '❌ Impossible de joindre le serveur');
+            }
+
+            btn.innerHTML = '📲 Lier mon Telegram'; btn.disabled = false;
+        }
+
+
+
+        function showError(id, msg) {
+            const el = document.getElementById(id);
+            el.textContent = msg; el.classList.add('visible');
+        }
+        function hideError(id) { document.getElementById(id).classList.remove('visible'); }
+
+        function toast(msg, type = 'success') {
+            const el = document.getElementById('toast');
+            el.textContent = msg; el.className = 'show ' + type;
+            setTimeout(() => el.className = type, 3500);
+        }
+
+        // Pré-remplir la clé si passée en ?key=SIL-XXX dans l'URL
+        window.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const key = params.get('key');
+            if (key) {
+                document.getElementById('license_key').value = key.toUpperCase();
+                document.getElementById('tg_key').value      = key.toUpperCase();
+                checkLicense();
+            }
+        });
+    </script>
+</body>
+</html>

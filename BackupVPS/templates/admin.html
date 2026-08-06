@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin — Silvertiti Licences</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Inter', sans-serif; }
+        body { background: #060b14; color: #cbd5e1; }
+
+        .glass {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(71, 85, 105, 0.35);
+            border-radius: 16px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, rgba(30,41,59,0.9), rgba(15,23,42,0.95));
+            border: 1px solid rgba(71,85,105,0.3);
+            border-radius: 14px;
+            padding: 20px;
+            transition: transform .25s, border-color .25s, box-shadow .25s;
+        }
+        .stat-card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(99,102,241,0.4);
+            box-shadow: 0 12px 40px rgba(99,102,241,0.1);
+        }
+
+        .badge {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;
+        }
+        .badge-active  { background: rgba(16,185,129,.15); color: #34d399; border: 1px solid rgba(16,185,129,.25); }
+        .badge-expired { background: rgba(251,191,36,.12); color: #fbbf24; border: 1px solid rgba(251,191,36,.25); }
+        .badge-revoked { background: rgba(239,68,68,.12); color: #f87171; border: 1px solid rgba(239,68,68,.25); }
+
+        .plan-chip {
+            padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 800;
+            text-transform: uppercase; letter-spacing: .5px;
+        }
+        .plan-trial    { background: rgba(100,116,139,.2); color: #94a3b8; }
+        .plan-starter  { background: rgba(59,130,246,.15); color: #60a5fa; }
+        .plan-pro      { background: rgba(139,92,246,.15); color: #a78bfa; }
+        .plan-lifetime { background: linear-gradient(90deg,rgba(251,191,36,.2),rgba(249,115,22,.2)); color: #fb923c; }
+
+        .input-dark {
+            background: #0f172a; border: 1px solid #334155; color: #e2e8f0;
+            border-radius: 8px; padding: 8px 12px; font-size: 13px; outline: none;
+            transition: border-color .2s;
+        }
+        .input-dark:focus { border-color: #6366f1; }
+
+        .btn-primary {
+            background: linear-gradient(135deg,#6366f1,#4f46e5);
+            color: white; font-weight: 700; border-radius: 8px; padding: 8px 18px;
+            font-size: 13px; cursor: pointer; border: none; transition: opacity .2s, transform .15s;
+        }
+        .btn-primary:hover { opacity: .9; transform: translateY(-1px); }
+
+        .btn-danger {
+            background: rgba(239,68,68,.12); color: #f87171;
+            border: 1px solid rgba(239,68,68,.25); border-radius: 8px;
+            padding: 5px 12px; font-size: 12px; font-weight: 700; cursor: pointer;
+            transition: background .2s;
+        }
+        .btn-danger:hover { background: rgba(239,68,68,.25); }
+
+        .btn-tg {
+            background: rgba(14,165,233,.12); color: #38bdf8;
+            border: 1px solid rgba(14,165,233,.25); border-radius: 8px;
+            padding: 5px 12px; font-size: 12px; font-weight: 700; cursor: pointer;
+            transition: background .2s;
+        }
+        .btn-tg:hover { background: rgba(14,165,233,.25); }
+
+        tr { transition: background .15s; }
+        tr:hover td { background: rgba(99,102,241,.04); }
+
+        .quota-bar { height: 4px; border-radius: 2px; background: #1e293b; overflow: hidden; margin-top: 4px; }
+        .quota-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg,#6366f1,#8b5cf6); transition: width .6s; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+
+        /* Nav */
+        .nav-link {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 6px 14px; border-radius: 8px; font-size: 13px; font-weight: 600;
+            color: #94a3b8; transition: all .2s; text-decoration: none;
+            border: 1px solid transparent;
+        }
+        .nav-link:hover { background: rgba(99,102,241,.1); color: #e2e8f0; border-color: rgba(99,102,241,.2); }
+        .nav-link.active { background: rgba(99,102,241,.15); color: #a5b4fc; border-color: rgba(99,102,241,.3); }
+
+        /* Notification toast */
+        #toast {
+            position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+            padding: 12px 20px; border-radius: 10px; font-size: 13px; font-weight: 600;
+            transform: translateY(80px); opacity: 0;
+            transition: transform .3s, opacity .3s;
+        }
+        #toast.show { transform: translateY(0); opacity: 1; }
+        #toast.success { background: rgba(16,185,129,.2); color: #34d399; border: 1px solid rgba(16,185,129,.3); }
+        #toast.error   { background: rgba(239,68,68,.2);  color: #f87171; border: 1px solid rgba(239,68,68,.3); }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,.85);
+            backdrop-filter: blur(4px); z-index: 100;
+            display: none; align-items: center; justify-content: center;
+        }
+        .modal-overlay.open { display: flex; }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <!-- TOAST -->
+    <div id="toast"></div>
+
+    <!-- HEADER NAV -->
+    <nav class="sticky top-0 z-50 border-b border-slate-800" style="background:rgba(6,11,20,.95);backdrop-filter:blur(12px);">
+        <div class="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <span class="text-lg font-black text-white">⚡ Clipo</span>
+                <span class="text-xs font-bold text-indigo-400 bg-indigo-400/10 border border-indigo-400/20 px-2 py-0.5 rounded-full">ADMIN</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <a href="/" class="nav-link">🏠 Accueil</a>
+                <a href="/admin/dashboard" class="nav-link">🤖 Dashboard</a>
+                <a href="/admin/manage-licenses" class="nav-link active">🔑 Licences</a>
+                <a href="/admin/logout" class="nav-link text-red-500 hover:text-red-400">🚪 Déconnexion</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- MAIN -->
+    <div class="max-w-7xl mx-auto px-4 py-8 space-y-6">
+
+        <!-- STATS CARDS -->
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4" id="stats_cards">
+            <div class="stat-card">
+                <div class="text-xs text-slate-500 font-bold uppercase mb-1">Total clients</div>
+                <div class="text-2xl font-black text-white" id="s_total">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="text-xs text-slate-500 font-bold uppercase mb-1">✅ Actifs</div>
+                <div class="text-2xl font-black text-emerald-400" id="s_active">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="text-xs text-slate-500 font-bold uppercase mb-1">🚫 Révoqués</div>
+                <div class="text-2xl font-black text-red-400" id="s_revoked">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="text-xs text-slate-500 font-bold uppercase mb-1">🎬 Vidéos/Jour</div>
+                <div class="text-2xl font-black text-indigo-400" id="s_today">—</div>
+            </div>
+            <div class="stat-card">
+                <div class="text-xs text-slate-500 font-bold uppercase mb-1">🎬 Total généré</div>
+                <div class="text-2xl font-black text-violet-400" id="s_total_uses">—</div>
+            </div>
+        </div>
+
+        <!-- ACTIONS + TABLE -->
+        <div class="glass overflow-hidden">
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-3 p-5 border-b border-slate-800">
+                <h2 class="font-bold text-white text-base flex items-center gap-2">
+                    🔑 Licences clients
+                    <span class="text-xs text-slate-500 font-normal" id="lic_count"></span>
+                </h2>
+                <div class="flex gap-2">
+                    <input id="search_lic" type="text" placeholder="🔍 Rechercher..." class="input-dark" style="width:180px" oninput="filterTable()">
+                    <button class="btn-primary" onclick="openCreateModal()">+ Créer une licence</button>
+                    <button onclick="loadData()" class="nav-link" style="border-color:rgba(71,85,105,.3)">🔄</button>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full border-collapse text-sm">
+                    <thead>
+                        <tr class="border-b border-slate-800 text-[10px] uppercase font-bold text-slate-500 bg-slate-900/50">
+                            <th class="p-4 text-left">Client</th>
+                            <th class="p-4 text-left">Clé</th>
+                            <th class="p-4 text-center">Plan</th>
+                            <th class="p-4 text-center">Statut</th>
+                            <th class="p-4 text-center">Quota jour</th>
+                            <th class="p-4 text-center">Expire</th>
+                            <th class="p-4 text-center">Telegram</th>
+                            <th class="p-4 text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="licenses_table" class="divide-y divide-slate-800/60">
+                        <tr><td colspan="8" class="p-10 text-center text-slate-500 italic">Chargement...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- MODAL CRÉATION -->
+    <div class="modal-overlay" id="createModal">
+        <div class="glass p-6 w-full max-w-md shadow-2xl" style="border-radius:20px">
+            <div class="flex justify-between items-center mb-5">
+                <h3 class="font-bold text-white text-base">✨ Nouvelle licence</h3>
+                <button onclick="closeModal('createModal')" class="text-slate-400 hover:text-white text-xl leading-none">✕</button>
+            </div>
+            <div class="space-y-3">
+                <div>
+                    <label class="text-xs text-slate-400 font-bold uppercase mb-1 block">Nom du client *</label>
+                    <input id="c_name" type="text" placeholder="Jean Dupont" class="input-dark w-full">
+                </div>
+                <div>
+                    <label class="text-xs text-slate-400 font-bold uppercase mb-1 block">Plan</label>
+                    <select id="c_plan" class="input-dark w-full">
+                        <option value="trial">🎁 Essai Gratuit (7j — 3 vidéos/j)</option>
+                        <option value="express">⏱️ Express (48h — 10 vidéos TOTAL)</option>
+                        <option value="starter" selected>🚀 Starter (30j — 10 vidéos/j)</option>
+                        <option value="pro">⚡ Pro (30j — 50 vidéos/j)</option>
+                        <option value="lifetime">👑 Lifetime (illimité)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-xs text-slate-400 font-bold uppercase mb-1 block">Chat ID Telegram (optionnel)</label>
+                    <input id="c_tg" type="text" placeholder="123456789" class="input-dark w-full">
+                    <p class="text-[10px] text-slate-500 mt-1">Le client peut aussi le renseigner lui-même via /setup</p>
+                </div>
+                <div>
+                    <label class="text-xs text-slate-400 font-bold uppercase mb-1 block">Note (optionnel)</label>
+                    <input id="c_note" type="text" placeholder="Payé PayPal 29€ le 23/02" class="input-dark w-full">
+                </div>
+            </div>
+            <div class="flex gap-3 mt-6">
+                <button onclick="closeModal('createModal')" class="flex-1 nav-link justify-center border border-slate-700">Annuler</button>
+                <button onclick="createLicense()" class="flex-1 btn-primary">Créer</button>
+            </div>
+            <!-- Résultat création -->
+            <div id="create_result" class="hidden mt-4 p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                <div class="text-xs text-slate-400 font-bold mb-1">✅ Clé générée — envoie-la au client :</div>
+                <div id="create_key" class="font-mono text-sm text-emerald-400 font-bold break-all cursor-pointer" onclick="copyKey()"></div>
+                <div class="text-[10px] text-slate-500 mt-1">Clique pour copier</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL SET TELEGRAM (admin force) -->
+    <div class="modal-overlay" id="tgModal">
+        <div class="glass p-6 w-full max-w-sm shadow-2xl" style="border-radius:20px">
+            <div class="flex justify-between items-center mb-5">
+                <h3 class="font-bold text-white text-base">📲 Lier Telegram</h3>
+                <button onclick="closeModal('tgModal')" class="text-slate-400 hover:text-white text-xl">✕</button>
+            </div>
+            <p class="text-xs text-slate-400 mb-3">Client : <strong id="tg_client_name" class="text-white"></strong></p>
+            <input id="tg_key_hidden" type="hidden">
+            <div>
+                <label class="text-xs text-slate-400 font-bold uppercase mb-1 block">Chat ID Telegram</label>
+                <input id="tg_chat_id" type="text" placeholder="123456789" class="input-dark w-full">
+            </div>
+            <div class="flex gap-3 mt-5">
+                <button onclick="closeModal('tgModal')" class="flex-1 nav-link justify-center border border-slate-700">Annuler</button>
+                <button onclick="saveTelegram()" class="flex-1 btn-primary">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADMIN SECRET INPUT (première visite) -->
+    <div class="modal-overlay open" id="authModal">
+        <div class="glass p-8 w-full max-w-sm shadow-2xl text-center" style="border-radius:20px">
+            <div class="text-4xl mb-4">🔐</div>
+            <h3 class="font-bold text-white text-lg mb-2">Accès Admin</h3>
+            <p class="text-xs text-slate-400 mb-5">Entre ton mot de passe administrateur</p>
+            <input id="admin_secret_input" type="password" placeholder="Mot de passe admin..."
+                class="input-dark w-full mb-3" onkeydown="if(event.key==='Enter')authSubmit()">
+            <div id="auth_error" class="text-xs text-red-400 mb-3 hidden">❌ Mot de passe incorrect</div>
+            <button onclick="authSubmit()" class="btn-primary w-full">Connexion</button>
+        </div>
+    </div>
+
+    <script>
+        let ADMIN_SECRET = '';
+        let allLicenses = [];
+        const SERVER = 'http://51.91.56.161:5000';  // VPS Flask
+
+        /* ---- AUTH ---- */
+        function authSubmit() {
+            ADMIN_SECRET = document.getElementById('admin_secret_input').value.trim();
+            if (!ADMIN_SECRET) return;
+            loadData();
+        }
+
+        /* ---- LOAD ---- */
+        async function loadData() {
+            try {
+                const res = await fetch(SERVER + '/admin/licenses', {
+                    headers: { 'X-Admin-Secret': ADMIN_SECRET }
+                });
+                if (res.status === 403) {
+                    document.getElementById('auth_error').classList.remove('hidden');
+                    document.getElementById('auth_error').textContent = '❌ Mot de passe incorrect';
+                    return;
+                }
+                if (!res.ok) {
+                    document.getElementById('auth_error').classList.remove('hidden');
+                    document.getElementById('auth_error').textContent = `❌ Erreur serveur (${res.status})`;
+                    return;
+                }
+                document.getElementById('authModal').classList.remove('open');
+                const data = await res.json();
+                allLicenses = data.licenses || [];
+                renderStats();
+                renderTable(allLicenses);
+            } catch(e) {
+                document.getElementById('auth_error').classList.remove('hidden');
+                document.getElementById('auth_error').textContent = `❌ Impossible de joindre le VPS (${SERVER}) — Vérifie que Flask tourne.`;
+            }
+        }
+
+        /* ---- STATS ---- */
+        function renderStats() {
+            const total  = allLicenses.length;
+            const active = allLicenses.filter(l => l.active && l.remaining_days >= 0).length;
+            const rev    = allLicenses.filter(l => !l.active).length;
+            const today  = allLicenses.reduce((s, l) => s + (l.usage_today || 0), 0);
+            const total_uses = allLicenses.reduce((s, l) => s + (l.total_uses || 0), 0);
+
+            document.getElementById('s_total').textContent      = total;
+            document.getElementById('s_active').textContent     = active;
+            document.getElementById('s_revoked').textContent    = rev;
+            document.getElementById('s_today').textContent      = today;
+            document.getElementById('s_total_uses').textContent = total_uses;
+            document.getElementById('lic_count').textContent    = `(${total})`;
+        }
+
+        /* ---- TABLE ---- */
+        function renderTable(list) {
+            const tbody = document.getElementById('licenses_table');
+            if (!list.length) {
+                tbody.innerHTML = `<tr><td colspan="8" class="p-10 text-center text-slate-500 italic">Aucune licence</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = list.map(l => {
+                const isExpired = l.active && l.remaining_days < 0;
+                const badge = !l.active
+                    ? `<span class="badge badge-revoked">🚫 Révoquée</span>`
+                    : isExpired
+                        ? `<span class="badge badge-expired">⏰ Expirée</span>`
+                        : `<span class="badge badge-active">✅ Active</span>`;
+
+                const planClass = {trial:'plan-trial',starter:'plan-starter',pro:'plan-pro',lifetime:'plan-lifetime'}[l.plan] || 'plan-trial';
+                const pct = Math.min(100, Math.round((l.usage_today / (l.videos_per_day || 1)) * 100));
+
+                const tgIcon = l.telegram_chat_id
+                    ? `<span class="text-emerald-400" title="${l.telegram_chat_id}">📲 Lié</span>`
+                    : `<span class="text-slate-600">📵 Non lié</span>`;
+
+                const canRevoke = l.active;
+
+                return `<tr>
+                    <td class="p-4">
+                        <div class="font-semibold text-white text-sm">${l.client_name}</div>
+                        <div class="text-[10px] text-slate-500 mt-0.5">Créé: ${l.created_at.slice(0,10)}</div>
+                        ${l.note ? `<div class="text-[10px] text-slate-600 italic">${l.note}</div>` : ''}
+                    </td>
+                    <td class="p-4">
+                        <code class="text-[11px] text-indigo-300 font-mono bg-indigo-900/20 px-2 py-0.5 rounded">${l.key}</code>
+                    </td>
+                    <td class="p-4 text-center">
+                        <span class="plan-chip ${planClass}">${l.plan_label}</span>
+                    </td>
+                    <td class="p-4 text-center">${badge}</td>
+                    <td class="p-4 text-center" style="min-width:100px">
+                        <div class="text-xs font-bold text-white">${l.usage_today}/${l.videos_per_day}</div>
+                        <div class="quota-bar"><div class="quota-fill" style="width:${pct}%"></div></div>
+                        <div class="text-[10px] text-slate-500 mt-1">${l.total_uses} total</div>
+                    </td>
+                    <td class="p-4 text-center">
+                        <div class="text-xs text-white font-medium">${l.expires_at}</div>
+                        <div class="text-[10px] ${l.remaining_days < 5 ? 'text-red-400' : 'text-slate-500'}">${l.remaining_days >= 0 ? l.remaining_days + 'j restants' : 'Expiré'}</div>
+                    </td>
+                    <td class="p-4 text-center">
+                        <div class="text-xs mb-1">${tgIcon}</div>
+                        <button onclick="openTgModal('${l.key}','${l.client_name.replace(/'/g,"\\'")}','${l.telegram_chat_id||''}')" class="btn-tg text-[10px] px-2 py-0.5">✏️ Modifier</button>
+                    </td>
+                    <td class="p-4 text-center">
+                        ${canRevoke
+                            ? `<button onclick="revokeLicense('${l.key}','${l.client_name.replace(/'/g,"\\'")}'))" class="btn-danger">Révoquer</button>`
+                            : `<span class="text-[10px] text-slate-600">—</span>`}
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        /* ---- FILTER ---- */
+        function filterTable() {
+            const q = document.getElementById('search_lic').value.toLowerCase();
+            const filtered = q
+                ? allLicenses.filter(l =>
+                    l.client_name.toLowerCase().includes(q) ||
+                    l.key.toLowerCase().includes(q) ||
+                    (l.note || '').toLowerCase().includes(q) ||
+                    l.plan_label.toLowerCase().includes(q))
+                : allLicenses;
+            renderTable(filtered);
+        }
+
+        /* ---- CREATE ---- */
+        function openCreateModal() {
+            document.getElementById('create_result').classList.add('hidden');
+            document.getElementById('c_name').value  = '';
+            document.getElementById('c_note').value  = '';
+            document.getElementById('c_tg').value    = '';
+            document.getElementById('createModal').classList.add('open');
+        }
+
+        async function createLicense() {
+            const name = document.getElementById('c_name').value.trim();
+            const plan = document.getElementById('c_plan').value;
+            const tg   = document.getElementById('c_tg').value.trim();
+            const note = document.getElementById('c_note').value.trim();
+            if (!name) { toast('Le nom du client est requis', 'error'); return; }
+
+            const res = await fetch(SERVER + '/admin/licenses/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Admin-Secret': ADMIN_SECRET },
+                body: JSON.stringify({ client_name: name, plan, note, telegram_chat_id: tg })
+            });
+            const data = await res.json();
+            if (!res.ok) { toast('Erreur : ' + data.error, 'error'); return; }
+
+            document.getElementById('create_key').textContent = data.license.key;
+            document.getElementById('create_result').classList.remove('hidden');
+            toast('✅ Licence créée !', 'success');
+            loadData();
+        }
+
+        function copyKey() {
+            const key = document.getElementById('create_key').textContent;
+            navigator.clipboard.writeText(key).then(() => toast('📋 Clé copiée !', 'success'));
+        }
+
+        /* ---- REVOKE ---- */
+        async function revokeLicense(key, name) {
+            if (!confirm(`Révoquer la licence de ${name} ?\nIl perdra immédiatement l'accès.`)) return;
+            const res = await fetch(SERVER + '/admin/licenses/revoke', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Admin-Secret': ADMIN_SECRET },
+                body: JSON.stringify({ key })
+            });
+            const data = await res.json();
+            if (res.ok) { toast('🚫 Licence révoquée', 'success'); loadData(); }
+            else toast('Erreur : ' + data.error, 'error');
+        }
+
+        /* ---- TELEGRAM ---- */
+        function openTgModal(key, name, tg) {
+            document.getElementById('tg_key_hidden').value   = key;
+            document.getElementById('tg_client_name').textContent = name;
+            document.getElementById('tg_chat_id').value      = tg;
+            document.getElementById('tgModal').classList.add('open');
+        }
+
+        async function saveTelegram() {
+            const key     = document.getElementById('tg_key_hidden').value;
+            const chat_id = document.getElementById('tg_chat_id').value.trim();
+            const res = await fetch(SERVER + '/admin/licenses/set-telegram', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Admin-Secret': ADMIN_SECRET },
+                body: JSON.stringify({ key, telegram_chat_id: chat_id })
+            });
+            const data = await res.json();
+            if (res.ok) { toast('📲 Telegram mis à jour', 'success'); closeModal('tgModal'); loadData(); }
+            else toast('Erreur : ' + data.error, 'error');
+        }
+
+        /* ---- UTILS ---- */
+        function openModal(id) { document.getElementById(id).classList.add('open'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+        function toast(msg, type = 'success') {
+            const el = document.getElementById('toast');
+            el.textContent = msg;
+            el.className = `show ${type}`;
+            setTimeout(() => { el.className = type; }, 3000);
+        }
+    </script>
+</body>
+</html>

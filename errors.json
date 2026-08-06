@@ -1,0 +1,92 @@
+[
+  {
+    "timestamp": "21/07 18:00",
+    "canal": "BestOfAnyme0023",
+    "type": "NO_CLIPS",
+    "message": "Pas assez de clips pour créer une vidéo complète (fallback 24h+7j+30j épuisé)"
+  },
+  {
+    "timestamp": "21/07 18:01",
+    "canal": "BestOfYouladecad",
+    "type": "CDN_UPLOAD",
+    "message": "Échec upload CDN Late — vidéo non postée"
+  },
+  {
+    "timestamp": "21/07 18:04",
+    "canal": "BestOfAenot",
+    "type": "CDN_UPLOAD",
+    "message": "Échec upload CDN Late — vidéo non postée"
+  },
+  {
+    "timestamp": "21/07 18:05",
+    "canal": "BestOfTerracid",
+    "type": "CDN_UPLOAD",
+    "message": "Échec upload CDN Late — vidéo non postée"
+  },
+  {
+    "timestamp": "21/07 18:17",
+    "canal": "Peurtok",
+    "type": "CDN_UPLOAD",
+    "message": "Échec upload CDN Late — vidéo non postée"
+  },
+  {
+    "timestamp": "24/07 13:50",
+    "canal": "Hopcore",
+    "type": "API_QUOTA",
+    "message": "Échec publication Late : QUOTA MENSUEL ATTEINT"
+  },
+  {
+    "timestamp": "24/07 19:53",
+    "canal": "Hopcore",
+    "type": "API_QUOTA",
+    "message": "Échec publication Late : QUOTA MENSUEL ATTEINT"
+  },
+  {
+    "timestamp": "24/07 20:17",
+    "canal": "Peurtok",
+    "type": "API_QUOTA",
+    "message": "Échec publication Late : QUOTA MENSUEL ATTEINT"
+  },
+  {
+    "timestamp": "24/07 23:35",
+    "canal": "Peurtok",
+    "type": "API_QUOTA",
+    "message": "Échec publication Late : QUOTA MENSUEL ATTEINT"
+  },
+  {
+    "timestamp": "25/07 17:30",
+    "canal": "BestOfTwitchFR",
+    "type": "NO_CLIPS",
+    "message": "Pas assez de clips pour créer une vidéo complète (fallback 24h+7j+30j épuisé)"
+  },
+  {
+    "timestamp": "27/07 18:06",
+    "canal": "BestOfJLTomy",
+    "type": "CDN_UPLOAD",
+    "message": "Échec upload CDN Late — vidéo non postée"
+  },
+  {
+    "timestamp": "28/07 19:48",
+    "canal": "Hopcore",
+    "type": "NO_CLIPS",
+    "message": "Pas assez de clips pour créer une vidéo complète (fallback 24h+7j+30j épuisé)"
+  },
+  {
+    "timestamp": "29/07 17:35",
+    "canal": "BestOfTwitchFR",
+    "type": "API_QUOTA",
+    "message": "Échec publication Late : QUOTA MENSUEL ATTEINT"
+  },
+  {
+    "timestamp": "29/07 17:41",
+    "canal": "BestOfTwitchFR",
+    "type": "API_QUOTA",
+    "message": "Échec publication Late : QUOTA MENSUEL ATTEINT"
+  },
+  {
+    "timestamp": "01/08 20:34",
+    "canal": "BestOfTwitchFR",
+    "type": "API_QUOTA",
+    "message": "Échec publication Late : QUOTA MENSUEL ATTEINT"
+  }
+]

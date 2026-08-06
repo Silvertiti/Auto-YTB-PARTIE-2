@@ -50,3 +50,53 @@ services:
     # On monte le dossier courant
     volumes:
       - .:/app
+
+  # -------------------------------------------------------
+  # SERVICE 3 : BOT TELEGRAM (Polling)
+  # -------------------------------------------------------
+  telegram-bot:
+    build: .
+    container_name: telegram_bot_container
+    restart: always
+
+    command: python telegram_bot.py
+
+    env_file:
+      - .env
+
+    volumes:
+      - .:/app
+
+  # -------------------------------------------------------
+  # SERVICE 4 : SCHEDULER TIKTOK (2 videos/jour auto)
+  # Posts automatiques : 8h00 et 17h00 (heure Paris)
+  # Rotation 3 comptes LATE API (20 posts/mois chacun)
+  # -------------------------------------------------------
+  tiktok-scheduler:
+    build: .
+    container_name: tiktok_scheduler_container
+    restart: always
+
+    command: python tiktok_scheduler.py
+
+    env_file:
+      - .env
+
+    # Timezone du VPS (important pour les horaires APScheduler)
+    environment:
+      - TZ=Europe/Paris
+
+    # Partage les memes fichiers que l'app principale
+    # (downloaded_clips.txt, tiktok_usage.json, etc.)
+    volumes:
+      - .:/app
+      - ./clips_downloaded:/app/clips_downloaded
+      - ./downloaded_clips.txt:/app/downloaded_clips.txt
+
+    # Augmente la mémoire (8 canaux x YOLO + FFmpeg = >2G potentiel)
+    deploy:
+      resources:
+        limits:
+          memory: 4G      # ↑ augmenté de 2G à 4G (anti OOM-kill en milieu de créneau)
+        reservations:
+          memory: 1G

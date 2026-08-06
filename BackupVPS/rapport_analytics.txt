@@ -1,0 +1,118 @@
+Videos uniques : 713
+
+============================================================
+RAPPORT ANALYTICS - 713 videos uniques sur 9 comptes
+============================================================
+
+GLOBAL
+  Total vues   : 833,899
+  Total likes  : 59,504
+  Ratio L/V    : 7.14%
+  Vues moy/vid : 1,169
+
+============================================================
+PAR COMPTE - trie par total vues
+============================================================
+
+1. @inconnu
+   Videos       : 497
+   Total vues   : 642,084
+   Total likes  : 47,147
+   Vues moy/vid : 1,291
+   Vues max     : 92,500
+   Ratio L/V    : 7.34%
+   Meilleure vid: ANIME023 EXPLOSE EN DIRECT 😱🔥 #TwitchFR #GamingLiv
+
+2. @clipdugamefr
+   Videos       : 40
+   Total vues   : 63,077
+   Total likes  : 2,679
+   Vues moy/vid : 1,576
+   Vues max     : 5,960
+   Ratio L/V    : 4.25%
+   Meilleure vid: IL A PLUS DE CHAISE QUE DE SENS 🤣👀💺 #TwitchFR #Bes
+
+3. @hawaiservice
+   Videos       : 48
+   Total vues   : 46,165
+   Total likes  : 3,196
+   Vues moy/vid : 961
+   Vues max     : 9,680
+   Ratio L/V    : 6.92%
+   Meilleure vid: ANIME023 EXPLOSE sur la SCÈNE 🤯🔥😱 #TwitchFR #Anyme
+
+4. @blackgen__
+   Videos       : 44
+   Total vues   : 29,731
+   Total likes  : 3,023
+   Vues moy/vid : 675
+   Vues max     : 4,290
+   Ratio L/V    : 10.17%
+   Meilleure vid: JLTomy DÉTRUIT le Record en 79 SECONDES ! 🚀💥🔥 #Twi
+
+5. @art.l1fe
+   Videos       : 44
+   Total vues   : 24,334
+   Total likes  : 1,895
+   Vues moy/vid : 553
+   Vues max     : 1,369
+   Ratio L/V    : 7.79%
+   Meilleure vid: YOUladecadd DÉTRUIT par un ÉLÈVE ? 😱🔥🤣 #TwitchFR #
+
+6. @bestoftomy
+   Videos       : 37
+   Total vues   : 17,309
+   Total likes  : 935
+   Vues moy/vid : 467
+   Vues max     : 1,641
+   Ratio L/V    : 5.40%
+   Meilleure vid: JLTomy EST-IL LE MEILLEUR ? 🤯🔥😱 #TwitchFR #JLTomy 
+
+7. @histoirekifontpeur
+   Videos       : 1
+   Total vues   : 10,100
+   Total likes  : 454
+   Vues moy/vid : 10,100
+   Vues max     : 10,100
+   Ratio L/V    : 4.50%
+   Meilleure vid: ANIME023 EXPLOSE SUR MINECRAFT 🚀💥🔥 #TwitchFR #Mine
+
+8. @peurtok
+   Videos       : 1
+   Total vues   : 786
+   Total likes  : 148
+   Vues moy/vid : 786
+   Vues max     : 786
+   Ratio L/V    : 18.83%
+   Meilleure vid: ANIME023 EST FOU ! 🤯🔥💥 #TwitchFR #BestOfTwitch #Ga
+
+9. @unjourunemusique_
+   Videos       : 1
+   Total vues   : 313
+   Total likes  : 27
+   Vues moy/vid : 313
+   Vues max     : 313
+   Ratio L/V    : 8.63%
+   Meilleure vid: JLTomy EXPLOSE avec ce PLAY 1 🚀💥🔥 #TwitchFR #Gamin
+
+============================================================
+TOP 10 VIDEOS GLOBALES
+============================================================
+ 1. [@inconnu] 92,500 vues | 7835 likes | ANIME023 EXPLOSE EN DIRECT 😱🔥 #TwitchFR #GamingLiv
+ 2. [@inconnu] 18,200 vues | 1218 likes | JLTomy PEUT-IL FAIRE UNE FEINTE INCROYABLE ? 😱🔥 #T
+ 3. [@inconnu] 11,300 vues |  506 likes | JLTomy EXPLOSE en LIVE 😱🔥 #TwitchFR #JLTomy #Gamin
+ 4. [@inconnu] 10,700 vues |  400 likes | JLTomy EXPLOSE en LIVE 😱🔥🤣 #TwitchFR #JLTomy #Gami
+ 5. [@histoirekifontpeur] 10,100 vues |  454 likes | ANIME023 EXPLOSE SUR MINECRAFT 🚀💥🔥 #TwitchFR #Mine
+ 6. [@inconnu] 10,100 vues |  977 likes | ANIME023 EXPLOSE sur MASTU ! 😱🔥 #TwitchFR #ANIME02
+ 7. [@inconnu]  9,985 vues |  564 likes | JLTomy EST-IL TROP DINGUE ? 😱🔥 #TwitchFR #JLTomy #
+ 8. [@hawaiservice]  9,680 vues |  330 likes | ANIME023 EXPLOSE sur la SCÈNE 🤯🔥😱 #TwitchFR #Anyme
+ 9. [@inconnu]  8,590 vues |  632 likes | JLTomy EXPLOSE en DIRECT ! 😱🔥 #TwitchFR #JLTomy #M
+10. [@inconnu]  6,584 vues |  426 likes | JLTomy DÉTRUIT Spider Man en 1 MINUTE 🔥🤯🚀 #TwitchF
+
+============================================================
+STATISTIQUES D'ENGAGEMENT
+============================================================
+  Videos >= 1 000 vues  : 200
+  Videos >= 5 000 vues  : 17
+  Videos >= 10 000 vues : 6
+  Videos 0 likes        : 4 (0.6%)

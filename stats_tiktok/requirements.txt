@@ -1,6 +1,0 @@
-requests
-python-dotenv
-Pillow
-streamlink
-yt-dlp
-urllib3<2.0
